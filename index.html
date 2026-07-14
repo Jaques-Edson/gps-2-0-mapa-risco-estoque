@@ -149,6 +149,17 @@ input,select,button{font:inherit; color:inherit}
 .brief-main{font-size:18px; font-weight:900; color:var(--ink); line-height:1.25}
 .brief-main.green{color:var(--green)} .brief-main.amber{color:var(--amber)} .brief-main.red{color:var(--red)}
 .brief-note{font-size:11px; color:var(--muted); line-height:1.45; margin-top:7px}
+.deviation-panel{grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px}
+@media (max-width:980px){.deviation-panel{grid-template-columns:1fr}}
+.deviation-card{border:1px solid var(--border); border-radius:14px; padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012))}
+.deviation-card.green{border-color:rgba(34,197,94,.38); background:rgba(34,197,94,.05)}
+.deviation-card.red{border-color:rgba(239,68,68,.38); background:rgba(239,68,68,.05)}
+.deviation-values{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-top:5px}
+.deviation-money{font-size:20px; font-weight:900}
+.deviation-pct{font-size:13px; font-weight:900; color:var(--muted)}
+.deviation-card.green .deviation-money,.deviation-card.green .deviation-pct{color:var(--green)}
+.deviation-card.red .deviation-money,.deviation-card.red .deviation-pct{color:var(--red)}
+.deviation-note{font-size:11px; color:var(--muted); line-height:1.45; margin-top:7px}
 .health-bar{height:8px; border-radius:20px; overflow:hidden; background:rgba(255,255,255,.08); margin-top:10px}
 .health-fill{height:100%; border-radius:20px; background:linear-gradient(90deg,var(--red),var(--amber),var(--green)); width:0%}
 .stats-row{display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:20px}
@@ -893,6 +904,37 @@ function renderDashboard(){
   else renderParametrosTab();
 }
 
+function avgDeviation(rows, baseFn, refFn){
+  const valid = rows.map(v=>({base:baseFn(v), ref:refFn(v)}))
+    .filter(x=>x.base!=null && isFinite(x.base) && x.ref!=null && isFinite(x.ref) && x.ref>0);
+  if(!valid.length) return { count:0, amountAvg:null, pctAvg:null };
+  const amountAvg = valid.reduce((sum,x)=>sum + (x.base - x.ref), 0) / valid.length;
+  const pctAvg = valid.reduce((sum,x)=>sum + ((x.base - x.ref) / x.ref), 0) / valid.length;
+  return { count:valid.length, amountAvg, pctAvg };
+}
+function signedBrR(v){
+  if(v==null || !isFinite(v)) return '-';
+  return (v>=0?'+ ':'- ') + brR(Math.abs(v));
+}
+function signedPct(v){
+  if(v==null || !isFinite(v)) return '-';
+  return (v>=0?'+':'') + brPct(v);
+}
+function renderDeviationCard(title, dev, positiveText, negativeText){
+  const positive = dev.amountAvg!=null && dev.amountAvg>=0;
+  const tone = positive ? 'green' : 'red';
+  const note = dev.count ? (positive ? positiveText : negativeText) : 'Sem carros suficientes com as duas referencias preenchidas.';
+  return `<div class="deviation-card ${dev.count?tone:''}">
+    <div class="brief-kicker">Analise de Desvios Medios</div>
+    <div class="brief-main">${escapeHtml(title)}</div>
+    <div class="deviation-values">
+      <span class="deviation-money">${signedBrR(dev.amountAvg)}</span>
+      <span class="deviation-pct">${signedPct(dev.pctAvg)}</span>
+    </div>
+    <div class="deviation-note">${escapeHtml(note)} Base: ${dev.count} carro${dev.count===1?'':'s'}.</div>
+  </div>`;
+}
+
 function renderStats(){
   const computed = stockData.map(v=>({v, c:computeStock(v)}));
   const total = stockData.length;
@@ -924,6 +966,8 @@ function renderStats(){
   const focusHint = prejuizo > 0 ? 'Clique nos cards de prejuízo para ver o canal: Venda Showroom, Repasse ou ambos.'
     : abaixo > 0 ? 'Clique em Abaixo da meta para revisar preço e margem.'
     : 'Acompanhe diariamente para manter o estoque saudável.';
+  const desvioAvaliacaoAuto = avgDeviation(stockData, v=>v.custo, v=>v.refAvaliacao);
+  const desvioVendaB2C = avgDeviation(stockData, v=>v.precoVenda, v=>v.aavB2C);
   const cards = [
     {label:'Veículos no estoque', num:total, pct:100, cls:'', action:'all', hint:'Ver todos os carros'},
     {label:'Disponíveis', num:disponivel, pct:pct(disponivel), cls:'cyan', action:'available', hint:'Detalhar disponíveis'},
@@ -955,6 +999,10 @@ function renderStats(){
         <div class="health-bar"><div class="health-fill" style="width:${scoreRep}%"></div></div>
         <div class="brief-note">${prejuizoRepasse} carro${prejuizoRepasse===1?'':'s'} com prejuízo na Margem Repasse.</div>
       </button>
+    </div>
+    <div class="deviation-panel">
+      ${renderDeviationCard('Avaliacao vs. AutoAvaliar', desvioAvaliacaoAuto, 'Na media, a avaliacao ficou acima da referencia AutoAvaliar.', 'Na media, a avaliacao ficou abaixo da referencia AutoAvaliar.')}
+      ${renderDeviationCard('Preco de Venda vs. B2C', desvioVendaB2C, 'Na media, a projecao de venda ficou acima do B2C.', 'Na media, a projecao de venda ficou abaixo do B2C.')}
     </div>
     ${cards.map(card=>`
       <button type="button" class="stat-card ${card.cls}" data-action="${card.action}" title="${card.hint}">
