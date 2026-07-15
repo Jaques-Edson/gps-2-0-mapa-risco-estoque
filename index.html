@@ -1405,7 +1405,7 @@ function openVehicleDetail(idx){
   $('vehicleDetailBody').innerHTML = `
     <div class="detail-kpis">
       ${detailKpi('Custo aquisição', brR(v.custo), '')}
-      ${detailKpi('Pago vs. avaliação', brPct(audit.compraVar), auditTone(audit.compraVar, true))}
+      ${detailKpi('Pago vs. Ref. AAV', brPct(audit.compraVar), auditTone(audit.compraVar, true))}
       ${detailKpi('Venda vs. B2C', brPct(audit.vendaVar), auditTone(audit.vendaVar, false))}
       ${detailKpi('Preço Venda Showroom', brR(v.precoVenda), '')}
       ${detailKpi('Margem atual showroom', brR(c.margemAtualShow), valueTone(c.margemAtualShow))}
