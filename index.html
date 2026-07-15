@@ -669,7 +669,7 @@ function computeStock(v){
   // Showroom: SM Showroom + todas as sugestões de preço do Auto Avaliar voltadas a venda direta
   const showVals = [v.precoVenda, v.aavB2C, v.fipe, v.refWeb, v.valorApp].filter(x=>x!=null && x>0);
   // Repasse: SM Repasse + sugestões de preço voltadas a atacado/repasse
-  const repVals  = [v.smRepasse, v.aavRepasse, v.refAAV, v.valorTopDealer].filter(x=>x!=null && x>0);
+  const repVals  = [v.smRepasse, v.aavRepasse, v.valorTopDealer].filter(x=>x!=null && x>0);
   const mediaShow = showVals.length ? showVals.reduce((a,b)=>a+b,0)/showVals.length : null;
   const mediaRep  = repVals.length ? repVals.reduce((a,b)=>a+b,0)/repVals.length : null;
 
@@ -730,7 +730,7 @@ function computeStock(v){
 
 function computeEval(e){
   const showVals = [e.fipe, e.aavB2C, e.refWeb, e.valorApp].filter(x=>x!=null && x>0);
-  const repVals = [e.aavRepasse, e.refAAV, e.valorTopDealer].filter(x=>x!=null && x>0);
+  const repVals = [e.aavRepasse, e.valorTopDealer].filter(x=>x!=null && x>0);
   const mediaShow = showVals.length ? showVals.reduce((a,b)=>a+b,0)/showVals.length : null;
   const mediaRepEv = repVals.length ? repVals.reduce((a,b)=>a+b,0)/repVals.length : null;
   const margemShow = mediaShow!=null
@@ -1001,7 +1001,7 @@ function renderStats(){
       </button>
     </div>
     <div class="deviation-panel">
-      ${renderDeviationCard('Avaliacao vs. Ref. AAV', desvioAvaliacaoAuto, 'Na media, a avaliacao ficou acima da referencia AAV.', 'Na media, a avaliacao ficou abaixo da referencia AAV.')}
+      ${renderDeviationCard('Valor avaliado vs. AAV Compra', desvioAvaliacaoAuto, 'Na media, o valor avaliado ficou acima da AAV Compra.', 'Na media, o valor avaliado ficou abaixo da AAV Compra.')}
       ${renderDeviationCard('Preco de Venda vs. B2C', desvioVendaB2C, 'Na media, a projecao de venda ficou acima do B2C.', 'Na media, a projecao de venda ficou abaixo do B2C.')}
     </div>
     ${cards.map(card=>`
@@ -1050,8 +1050,8 @@ const STOCK_COLS = [
   {key:'valorApp', label:'Valor APP', edit:1, money:1},
   {key:'precoVenda', label:'Preço Venda Showroom', edit:1, money:1},
   {key:'_mediaShow', label:'Média Showroom', calc:1, money:1},
-  {key:'aavRepasse', label:'AAV Repasse', edit:1, money:1},
-  {key:'refAAV', label:'Ref. AAV (geral)', edit:1, money:1},
+  {key:'aavRepasse', label:'AAV B2B Venda', edit:1, money:1},
+  {key:'refAAV', label:'AAV Compra', edit:1, money:1},
   {key:'valorTopDealer', label:'Valor Top Dealer', edit:1, money:1},
   {key:'smRepasse', label:'SM Repasse', edit:1, money:1},
   {key:'_mediaRep', label:'Média Repasse', calc:1, money:1},
@@ -1310,10 +1310,10 @@ function auditGps(v, c){
   const vendaStatus = auditStatusVenda(vendaVar);
   const gpsStatus = compraVar==null || vendaVar==null ? 'missing' : (compraVar>0.03 || Math.abs(vendaVar)>0.03 ? 'over' : 'ok');
   const desvio = compraVar!=null && compraVar>0.03
-    ? `o valor pago ficou ${brPct(compraVar)} acima da Ref. AAV.`
+    ? `o valor pago ficou ${brPct(compraVar)} acima da AAV Compra.`
     : compraVar!=null && compraVar<-0.03
-      ? `o valor pago ficou ${brPct(Math.abs(compraVar))} abaixo da Ref. AAV.`
-      : compraVar!=null ? 'a compra ficou alinhada à Ref. AAV.' : 'não há Ref. AAV para auditar o valor pago.';
+      ? `o valor pago ficou ${brPct(Math.abs(compraVar))} abaixo da AAV Compra.`
+      : compraVar!=null ? 'a compra ficou alinhada à AAV Compra.' : 'não há AAV Compra para auditar o valor pago.';
   const recalculo = vendaVar!=null && Math.abs(vendaVar)>0.03
     ? `o B2C indicava venda projetada ${vendaVar>0?'acima':'abaixo'} do mercado em ${brPct(Math.abs(vendaVar))}.`
     : vendaVar!=null ? 'o preço projetado estava aderente ao B2C.' : 'não há B2C para validar a expectativa de venda.';
@@ -1327,7 +1327,7 @@ function renderAuditSection(v, c, audit){
   return `<section class="detail-section wide">
     <h3>Auditoria GPS - compra e venda</h3>
     ${infoRows([
-      ['Valor pago', brR(v.custo)], ['Valor avaliado AutoAvaliar', brR(v.refAvaliacao)], ['Ref. AAV', brR(v.refAAV)], ['% Pago vs. Ref. AAV', brPct(audit.compraVar)], ['Status da compra', audit.compraStatus],
+      ['Valor pago', brR(v.custo)], ['Valor avaliado AutoAvaliar', brR(v.refAvaliacao)], ['AAV Compra', brR(v.refAAV)], ['% Pago vs. AAV Compra', brPct(audit.compraVar)], ['Status da compra', audit.compraStatus],
       ['Preço Venda Showroom', brR(v.precoVenda)], ['B2C AutoAvaliar', brR(v.aavB2C)], ['% Venda vs. B2C', brPct(audit.vendaVar)], ['Status da venda', audit.vendaStatus],
       ['FIPE', brR(v.fipe)], ['% B2C vs. FIPE', brPct(audit.b2cFipeVar)]
     ])}
@@ -1365,10 +1365,10 @@ function renderComparisonSection(p, audit){
   return `<section class="detail-section wide">
     <h3>Comparar Resultados SM x Auto Avaliar</h3>
     ${infoRows([
-      ['Desvio Pago x Ref. AAV', brPct(audit.compraVar)],
+      ['Desvio Pago x AAV Compra', brPct(audit.compraVar)],
       ['Desvio Venda Showroom x AAV B2C', brPct(audit.vendaVar)],
       ['Custo juros SM', `${(PARAMS.juros*100).toLocaleString('pt-BR')}% a.m. sobre ${brR(p.casco)}`],
-      ['Custo juros AAV', p.aav ? `${(PARAMS.juros*100).toLocaleString('pt-BR')}% a.m. sobre ${brR(p.aav.casco)}` : 'Sem AAV Ref.']
+      ['Custo juros AAV', p.aav ? `${(PARAMS.juros*100).toLocaleString('pt-BR')}% a.m. sobre ${brR(p.aav.casco)}` : 'Sem AAV Compra.']
     ])}
     <table class="compare-table">
       <thead><tr><th>Período</th><th>Margem SM</th><th>Juros SM</th><th>Margem AAV</th><th>Juros AAV</th><th>Dif. margem SM-AAV</th></tr></thead>
@@ -1405,7 +1405,7 @@ function openVehicleDetail(idx){
   $('vehicleDetailBody').innerHTML = `
     <div class="detail-kpis">
       ${detailKpi('Custo aquisição', brR(v.custo), '')}
-      ${detailKpi('Pago vs. Ref. AAV', brPct(audit.compraVar), auditTone(audit.compraVar, true))}
+      ${detailKpi('Pago vs. AAV Compra', brPct(audit.compraVar), auditTone(audit.compraVar, true))}
       ${detailKpi('Venda vs. B2C', brPct(audit.vendaVar), auditTone(audit.vendaVar, false))}
       ${detailKpi('Preço Venda Showroom', brR(v.precoVenda), '')}
       ${detailKpi('Margem atual showroom', brR(c.margemAtualShow), valueTone(c.margemAtualShow))}
@@ -1448,8 +1448,7 @@ function openVehicleDetail(idx){
         <h3>Mercado Repasse</h3>
         ${marketBars([
           {label:'SM Repasse', value:v.smRepasse, tone:'green'},
-          {label:'AAV Repasse', value:v.aavRepasse},
-          {label:'Ref. AAV', value:v.refAAV},
+          {label:'AAV B2B Venda', value:v.aavRepasse},
           {label:'Top Dealer', value:v.valorTopDealer},
           {label:'Média', value:c.mediaRep, tone:'amber'}
         ])}
@@ -1604,7 +1603,7 @@ function renderProjecaoTab(){
 }
 /* ---------------- Avaliações tab ---------------- */
 const AV_HEADERS = ['Placa','Status','Data','Marca','Modelo','Versão','KM','Valor Avaliado','Reparo Previsto',
-  'FIPE','AAV B2C','Ref. Web','Valor APP','AAV Repasse','Ref. AAV (geral)','Valor Top Dealer',
+  'FIPE','AAV B2C','Ref. Web','Valor APP','AAV B2B Venda','AAV Compra','Valor Top Dealer',
   'Média Showroom','Média Repasse','Margem D0 Show %','Margem D0 Rep %','Recomendação'];
 const SORT_OPTIONS_AVAL = [
   {key:'placa', label:'Placa'}, {key:'modelo', label:'Modelo'}, {key:'valorAvaliado', label:'Valor Avaliado'},
@@ -1767,7 +1766,7 @@ function exportExcel(){
 
   const stockHeaders = ['Placa','Pátio','Modelo','Ano/Mod','KM','Situação','Dias em Estoque','Custo Aquisição',
     'Reparo Previsto','FIPE','AAV B2C','Ref. Web','Valor APP','Preço Venda Showroom','Margem Atual Sistema','Média Showroom',
-    'AAV Repasse','Ref. AAV (geral)','Valor Top Dealer','SM Repasse','Média Repasse',
+    'AAV B2B Venda','AAV Compra','Valor Top Dealer','SM Repasse','Média Repasse',
     'Margem D0 Showroom %','Margem D0 Repasse %','Margem Atual Showroom','Margem Atual Repasse',
     'Status Margem D0','Status Margem c/ Juro','Limite Margem Ideal (Show)','Data Zera (Show)','Limite Margem Ideal (Rep)','Data Zera (Rep)'];
   const stockRows = stockData.map(v=>{
@@ -1788,7 +1787,7 @@ function exportExcel(){
 
   if(evalData.length){
     const evHeaders = ['Placa','Status Avaliação','Data Avaliação','Marca','Modelo','Versão','KM','Valor Avaliado',
-      'Gasto Previsto','FIPE','AAV B2C','Ref. Web','Valor APP','AAV Repasse','Ref. AAV (geral)','Valor Top Dealer',
+      'Gasto Previsto','FIPE','AAV B2C','Ref. Web','Valor APP','AAV B2B Venda','AAV Compra','Valor Top Dealer',
       'Média Showroom','Média Repasse','Margem D0 Showroom %','Margem D0 Repasse %','Recomendação'];
     const evRows = evalData.map(e=>{
       const c = computeEval(e);
