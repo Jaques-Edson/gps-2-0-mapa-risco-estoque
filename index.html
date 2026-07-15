@@ -1261,7 +1261,7 @@ function marketBars(items){
     return `<div class="bar-row">
       <div class="bar-label" title="${escapeHtml(x.label)}">${escapeHtml(x.label)}</div>
       <div class="bar-track"><div class="bar-fill ${x.tone||''}" style="width:${width}%"></div></div>
-      <div class="bar-value">${brR(x.value)}</div>
+      <div class="bar-value">${has ? brR(x.value) : '-'}</div>
 
     </div>`;
   }).join('')}</div>`;
@@ -1302,7 +1302,8 @@ function auditStatusVenda(pct){
   return pct > 0 ? 'Acima do B2C' : 'Abaixo do B2C';
 }
 function auditGps(v, c){
-  const compraVar = pctDiff(v.custo, v.refAvaliacao);
+  const compraRef = v.refAAV || null;
+  const compraVar = pctDiff(v.custo, compraRef);
   const vendaVar = pctDiff(v.precoVenda, v.aavB2C);
   const b2cFipeVar = pctDiff(v.aavB2C, v.fipe);
   const compraStatus = auditStatusCompra(compraVar);
@@ -1326,7 +1327,7 @@ function renderAuditSection(v, c, audit){
   return `<section class="detail-section wide">
     <h3>Auditoria GPS - compra e venda</h3>
     ${infoRows([
-      ['Valor pago', brR(v.custo)], ['Valor avaliado AutoAvaliar', brR(v.refAvaliacao)], ['Ref. AAV', brR(v.refAAV)], ['% Pago vs. avaliacao', brPct(audit.compraVar)], ['Status da compra', audit.compraStatus],
+      ['Valor pago', brR(v.custo)], ['Valor avaliado AutoAvaliar', brR(v.refAvaliacao)], ['Ref. AAV', brR(v.refAAV)], ['% Pago vs. Ref. AAV', brPct(audit.compraVar)], ['Status da compra', audit.compraStatus],
       ['Preço Venda Showroom', brR(v.precoVenda)], ['B2C AutoAvaliar', brR(v.aavB2C)], ['% Venda vs. B2C', brPct(audit.vendaVar)], ['Status da venda', audit.vendaStatus],
       ['FIPE', brR(v.fipe)], ['% B2C vs. FIPE', brPct(audit.b2cFipeVar)]
     ])}
@@ -1364,7 +1365,7 @@ function renderComparisonSection(p, audit){
   return `<section class="detail-section wide">
     <h3>Comparar Resultados SM x Auto Avaliar</h3>
     ${infoRows([
-      ['Desvio Custo SM x AAV Ref.', brPct(audit.compraVar)],
+      ['Desvio Pago x Ref. AAV', brPct(audit.compraVar)],
       ['Desvio Venda Showroom x AAV B2C', brPct(audit.vendaVar)],
       ['Custo juros SM', `${(PARAMS.juros*100).toLocaleString('pt-BR')}% a.m. sobre ${brR(p.casco)}`],
       ['Custo juros AAV', p.aav ? `${(PARAMS.juros*100).toLocaleString('pt-BR')}% a.m. sobre ${brR(p.aav.casco)}` : 'Sem AAV Ref.']
