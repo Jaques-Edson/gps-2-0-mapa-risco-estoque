@@ -1310,10 +1310,10 @@ function auditGps(v, c){
   const vendaStatus = auditStatusVenda(vendaVar);
   const gpsStatus = compraVar==null || vendaVar==null ? 'missing' : (compraVar>0.03 || Math.abs(vendaVar)>0.03 ? 'over' : 'ok');
   const desvio = compraVar!=null && compraVar>0.03
-    ? `o valor pago ficou ${brPct(compraVar)} acima da referência de avaliação.`
+    ? `o valor pago ficou ${brPct(compraVar)} acima da Ref. AAV.`
     : compraVar!=null && compraVar<-0.03
-      ? `o valor pago ficou ${brPct(Math.abs(compraVar))} abaixo da referência de avaliação.`
-      : compraVar!=null ? 'a compra ficou alinhada à referência de avaliação.' : 'não há referência de avaliação para auditar o valor pago.';
+      ? `o valor pago ficou ${brPct(Math.abs(compraVar))} abaixo da Ref. AAV.`
+      : compraVar!=null ? 'a compra ficou alinhada à Ref. AAV.' : 'não há Ref. AAV para auditar o valor pago.';
   const recalculo = vendaVar!=null && Math.abs(vendaVar)>0.03
     ? `o B2C indicava venda projetada ${vendaVar>0?'acima':'abaixo'} do mercado em ${brPct(Math.abs(vendaVar))}.`
     : vendaVar!=null ? 'o preço projetado estava aderente ao B2C.' : 'não há B2C para validar a expectativa de venda.';
