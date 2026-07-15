@@ -1,0 +1,1900 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#04101e"/>
+<title>GPS 2.0</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy-950:#04101e; --navy-900:#061728; --navy-850:#081d31; --navy-800:#0b2138; --navy-700:#123049;
+  --cyan:#25d7f3; --cyan-dim:rgba(37,215,243,.16);
+  --gold:#ffd700; --gold-dim:rgba(255,215,0,.14);
+  --ink:#f0f4ff; --muted:#7a9ab8; --muted-2:#4d6883;
+  --green:#22c55e; --green-dim:rgba(34,197,94,.14);
+  --amber:#f59e0b; --amber-dim:rgba(245,158,11,.14);
+  --red:#ef4444; --red-dim:rgba(239,68,68,.14);
+  --border:rgba(255,255,255,.09); --border-2:rgba(255,255,255,.15);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:Arial,Helvetica,sans-serif; color:var(--ink);
+  background:
+    radial-gradient(ellipse 900px 500px at 15% -10%, rgba(37,215,243,.10), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 110% 10%, rgba(255,215,0,.06), transparent 60%),
+    linear-gradient(135deg,var(--navy-950) 0%,var(--navy-900) 60%,#020c14 100%);
+  min-height:100vh;
+}
+input,select,button{font:inherit; color:inherit}
+::-webkit-scrollbar{height:10px;width:10px}
+::-webkit-scrollbar-thumb{background:var(--navy-700); border-radius:6px}
+::-webkit-scrollbar-track{background:transparent}
+
+.app{max-width:1440px; margin:0 auto; padding:0 22px 60px}
+
+/* ===== TOPBAR ===== */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  display:flex; align-items:center; gap:14px; justify-content:space-between;
+  padding:16px 4px; margin-bottom:22px;
+  background:rgba(4,12,24,.85); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+.brand{display:flex; align-items:center; gap:12px}
+.badge{
+  width:38px; height:38px; border-radius:11px; flex:0 0 auto;
+  display:flex; align-items:center; justify-content:center;
+  background:linear-gradient(135deg, var(--cyan-dim), var(--gold-dim));
+  border:1px solid rgba(37,215,243,.4);
+}
+.badge svg{width:22px; height:22px}
+.brand-logo{
+  width:150px; height:30px; object-fit:contain; flex:0 0 auto;
+  border-radius:6px; opacity:.96;
+}
+.brand-text{line-height:1.25}
+.brand-title{font-size:16px; font-weight:900; letter-spacing:.2px}
+.brand-sub{font-size:11px; color:var(--muted)}
+.topbar-actions{display:flex; align-items:center; gap:10px}
+
+.btn{
+  appearance:none; border:1px solid var(--border-2); background:var(--navy-800); color:var(--ink);
+  padding:10px 16px; border-radius:9px; font-size:13px; font-weight:700; cursor:pointer;
+  transition:transform .12s ease, border-color .12s ease, background .12s ease;
+  display:inline-flex; align-items:center; gap:8px;
+}
+.btn:hover{border-color:var(--cyan); transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn:disabled{opacity:.35; cursor:not-allowed; transform:none}
+.btn-primary{
+  background:linear-gradient(135deg, rgba(37,215,243,.22), rgba(37,215,243,.08));
+  border-color:rgba(37,215,243,.5);
+}
+.btn-primary:hover{border-color:var(--cyan)}
+.btn-gold{
+  background:linear-gradient(135deg, rgba(255,215,0,.22), rgba(255,215,0,.06));
+  border-color:rgba(255,215,0,.45);
+}
+.btn svg{width:15px; height:15px}
+
+/* ===== UPLOAD ===== */
+.upload-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:26px}
+@media (max-width:820px){.upload-grid{grid-template-columns:1fr}}
+
+.dropzone{
+  position:relative; border:1.5px dashed var(--border-2); border-radius:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.025), rgba(255,255,255,.01));
+  padding:26px; cursor:pointer; transition:border-color .15s ease, background .15s ease;
+  overflow:hidden;
+}
+.dropzone:hover{border-color:rgba(37,215,243,.55); background:rgba(37,215,243,.04)}
+.dropzone.drag{border-color:var(--cyan); background:rgba(37,215,243,.09)}
+.dropzone.ok{border-color:rgba(34,197,94,.55); background:rgba(34,197,94,.05)}
+.dropzone.required::after{
+  content:"obrigatório"; position:absolute; top:14px; right:16px; font-size:10px;
+  letter-spacing:.06em; text-transform:uppercase; color:var(--gold); font-weight:800;
+}
+.dz-row{display:flex; align-items:flex-start; gap:16px}
+.dz-radar{
+  flex:0 0 auto; width:52px; height:52px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; position:relative;
+  background:radial-gradient(circle at 50% 50%, rgba(37,215,243,.16), transparent 70%);
+  border:1px solid rgba(37,215,243,.35);
+}
+.dz-radar svg{width:24px; height:24px; color:var(--cyan)}
+.dz-radar.spin::before{
+  content:""; position:absolute; inset:-1px; border-radius:50%;
+  background:conic-gradient(from 0deg, transparent 0%, var(--cyan) 12%, transparent 26%);
+  animation:spin 1.1s linear infinite;
+}
+.dz-radar.done{background:radial-gradient(circle at 50% 50%, rgba(34,197,94,.2), transparent 70%); border-color:rgba(34,197,94,.5)}
+.dz-radar.done svg{color:var(--green)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.dz-title{font-size:14px; font-weight:800}
+.dz-desc{font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.5}
+.dz-status{font-size:11.5px; margin-top:9px; color:var(--muted-2); display:flex; align-items:center; gap:7px; flex-wrap:wrap}
+.dz-status .chip{
+  background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:20px;
+  padding:3px 10px; font-size:10.5px; font-weight:700; color:var(--ink);
+}
+.dz-status .chip.ok{background:var(--green-dim); border-color:rgba(34,197,94,.4); color:#8ff0b4}
+.dz-status .chip.err{background:var(--red-dim); border-color:rgba(239,68,68,.4); color:#ffb3b0}
+.dropzone.ok{padding:18px 22px; min-height:108px}
+.dropzone.ok .dz-desc{display:none}
+.dropzone.ok .dz-radar{width:40px; height:40px}
+.dropzone.ok .dz-radar svg{width:20px; height:20px}
+.dropzone.ok .dz-title{font-size:13px}
+.dropzone.ok .dz-status{margin-top:8px; gap:5px}
+.dropzone.ok .dz-status .chip{font-size:10px; padding:2px 8px; max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.dropzone input[type=file]{display:none}
+
+/* ===== DASHBOARD / STATS ===== */
+.dashboard-brief{
+  display:grid; grid-template-columns:1.15fr 1fr 1fr; gap:12px; margin-bottom:14px;
+}
+@media (max-width:980px){.dashboard-brief{grid-template-columns:1fr}}
+.brief-card{
+  border:1px solid var(--border); border-radius:14px; padding:14px 16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
+}
+.brief-card.alert{border-color:rgba(245,158,11,.45); background:rgba(245,158,11,.055)}
+.brief-card.danger{border-color:rgba(239,68,68,.45); background:rgba(239,68,68,.055)}
+.brief-card.health-action{appearance:none; text-align:left; width:100%; color:inherit; cursor:pointer}
+.brief-card.health-action:hover{border-color:rgba(37,215,243,.5); background:rgba(37,215,243,.045)}
+.brief-card.health-action:focus-visible{outline:2px solid var(--cyan); outline-offset:2px}
+.brief-kicker{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; font-weight:900; margin-bottom:6px}
+.brief-main{font-size:18px; font-weight:900; color:var(--ink); line-height:1.25}
+.brief-main.green{color:var(--green)} .brief-main.amber{color:var(--amber)} .brief-main.red{color:var(--red)}
+.brief-note{font-size:11px; color:var(--muted); line-height:1.45; margin-top:7px}
+.deviation-panel{grid-column:1/-1; display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px}
+@media (max-width:980px){.deviation-panel{grid-template-columns:1fr}}
+.deviation-card{border:1px solid var(--border); border-radius:14px; padding:14px 16px; background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012))}
+.deviation-card.green{border-color:rgba(34,197,94,.38); background:rgba(34,197,94,.05)}
+.deviation-card.red{border-color:rgba(239,68,68,.38); background:rgba(239,68,68,.05)}
+.deviation-values{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-top:5px}
+.deviation-money{font-size:20px; font-weight:900}
+.deviation-pct{font-size:13px; font-weight:900; color:var(--muted)}
+.deviation-card.green .deviation-money,.deviation-card.green .deviation-pct{color:var(--green)}
+.deviation-card.red .deviation-money,.deviation-card.red .deviation-pct{color:var(--red)}
+.deviation-note{font-size:11px; color:var(--muted); line-height:1.45; margin-top:7px}
+.health-bar{height:8px; border-radius:20px; overflow:hidden; background:rgba(255,255,255,.08); margin-top:10px}
+.health-fill{height:100%; border-radius:20px; background:linear-gradient(90deg,var(--red),var(--amber),var(--green)); width:0%}
+.stats-row{display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:20px}
+@media (max-width:1180px){.stats-row{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:650px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+.stat-card{
+  appearance:none; width:100%; text-align:left; color:inherit; cursor:pointer;
+  background:linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
+  border:1px solid var(--border); border-radius:14px; padding:13px 15px;
+  transition:transform .12s ease, border-color .12s ease, background .12s ease;
+}
+.stat-card:hover{transform:translateY(-1px); border-color:rgba(37,215,243,.45); background:rgba(37,215,243,.045)}
+.stat-card:focus-visible{outline:2px solid var(--cyan); outline-offset:2px}
+.stat-head{display:flex; align-items:flex-start; justify-content:space-between; gap:8px}
+.stat-num{font-size:24px; font-weight:900; letter-spacing:-.02em}
+.stat-pct{font-size:12px; font-weight:900; color:var(--muted); padding-top:5px}
+.stat-label{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-top:4px; font-weight:800}
+.stat-action{font-size:10px; color:var(--muted-2); margin-top:7px; font-weight:700}
+.stat-bar{height:5px; border-radius:20px; background:rgba(255,255,255,.08); margin-top:10px; overflow:hidden}
+.stat-fill{height:100%; border-radius:20px; background:var(--cyan); width:0%}
+.stat-card.green .stat-num,.stat-card.green .stat-pct{color:var(--green)}
+.stat-card.amber .stat-num,.stat-card.amber .stat-pct{color:var(--amber)}
+.stat-card.red .stat-num,.stat-card.red .stat-pct{color:var(--red)}
+.stat-card.cyan .stat-num,.stat-card.cyan .stat-pct{color:var(--cyan)}
+.stat-card.green .stat-fill{background:var(--green)}
+.stat-card.amber .stat-fill{background:var(--amber)}
+.stat-card.red .stat-fill{background:var(--red)}
+
+/* ===== TABS / TOOLBAR ===== */
+.tabs{display:flex; gap:6px; border-bottom:1px solid var(--border); margin-bottom:16px}
+.tab{
+  padding:11px 18px; font-size:13px; font-weight:800; color:var(--muted); cursor:pointer;
+  border-bottom:2px solid transparent; transition:color .12s ease, border-color .12s ease;
+}
+.tab.active{color:var(--ink); border-color:var(--cyan)}
+.tab:hover{color:var(--ink)}
+
+.toolbar{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px}
+.toolbar input[type=text], .toolbar select{
+  background:var(--navy-800); border:1px solid var(--border-2); color:var(--ink);
+  padding:9px 12px; border-radius:8px; font-size:12.5px; min-width:150px;
+}
+.toolbar input[type=text]{min-width:220px}
+
+.toolbar select, .sort-ctrl select{background-color:var(--navy-800); color:var(--ink); color-scheme:dark}
+.toolbar select option, .sort-ctrl select option{background:#071828; color:#eef6ff}
+.toolbar select option:checked, .sort-ctrl select option:checked{background:#1d4ed8; color:#fff}.toolbar .spacer{flex:1}
+.legend-inline{font-size:11px; color:var(--muted); display:flex; gap:14px; align-items:center; flex-wrap:wrap}
+.legend-inline .sw{display:inline-flex; align-items:center; gap:5px}
+.legend-inline .dot{width:8px; height:8px; border-radius:50%}
+
+.btn-sm{padding:8px 13px; font-size:12px; border-radius:8px}
+.sort-ctrl{display:flex; align-items:center; gap:8px; background:var(--navy-800); border:1px solid var(--border-2); border-radius:9px; padding:6px 10px}
+.sort-ctrl label{font-size:11px; color:var(--muted); font-weight:700; white-space:nowrap}
+.sort-ctrl select{background:var(--navy-800); border:none; padding:3px 4px; font-size:12.5px; color:var(--ink); color-scheme:dark}
+.sort-ctrl select:focus{outline:none}
+.sort-ctrl .btn-sm{padding:6px 11px; font-size:11.5px}
+
+.pillbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px}
+.pillbar-label{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:800; margin-right:-2px}
+.pill-btn{
+  appearance:none; border:1px solid var(--border-2); background:rgba(255,255,255,.03); color:var(--muted);
+  padding:6px 13px; border-radius:20px; font-size:11.5px; font-weight:700; cursor:pointer;
+  transition:all .12s ease;
+}
+.pill-btn:hover{border-color:var(--cyan); color:var(--ink)}
+.pill-btn.active{background:rgba(37,215,243,.16); border-color:var(--cyan); color:var(--ink)}
+.pill-btn.active.ok{background:var(--green-dim); border-color:rgba(34,197,94,.55); color:#8ff0b4}
+.pill-btn.active.bad{background:var(--red-dim); border-color:rgba(239,68,68,.55); color:#ffb3b0}
+.pill-btn.active.warn{background:var(--amber-dim); border-color:rgba(245,158,11,.55); color:#ffd08a}
+
+/* ===== TABLE ===== */
+.table-wrap{
+  border:1px solid var(--border); border-radius:14px; overflow:auto; max-height:66vh;
+  background:rgba(255,255,255,.015);
+}
+table{border-collapse:collapse; width:100%; font-size:12px; white-space:nowrap}
+.table-wrap table th:last-child,.table-wrap table td:last-child{min-width:120px}
+thead th{
+  position:sticky; top:0; z-index:5; background:var(--navy-900); color:var(--ink);
+  text-align:center; padding:9px 8px; font-size:10.5px; letter-spacing:.02em; font-weight:800;
+  border-bottom:1px solid var(--border-2); border-right:1px solid var(--border); cursor:pointer;
+  user-select:none;
+}
+thead th:hover{color:var(--cyan)}
+thead th .arrow{opacity:.5; font-size:9px; margin-left:3px}
+tbody td{
+  padding:7px 8px; border-bottom:1px solid var(--border); border-right:1px solid rgba(255,255,255,.04);
+  text-align:center;
+}
+tbody tr:hover{background:rgba(37,215,243,.045)}
+tbody tr.vehicle-row{cursor:pointer}
+tbody tr.vehicle-row:hover{background:rgba(37,215,243,.075)}
+tbody td.txt-left{text-align:left}
+.col-modelo{max-width:210px; overflow:hidden; text-overflow:ellipsis; text-align:left}
+td.editable input{
+  width:88px; background:transparent; border:1px solid transparent; border-radius:6px;
+  color:var(--gold); text-align:right; padding:4px 6px; font-size:12px; font-weight:700;
+}
+td.editable input:hover{border-color:var(--border-2)}
+td.editable input:focus{outline:none; border-color:var(--gold); background:rgba(255,215,0,.06)}
+td.calc{color:var(--ink); font-variant-numeric:tabular-nums}
+td.neg{color:var(--red); font-weight:700}
+td.pos{color:var(--green)}
+.pill{display:inline-block; padding:3px 9px; border-radius:20px; font-size:10.5px; font-weight:800; white-space:nowrap}
+.pill.ok{background:var(--green-dim); color:#8ff0b4; border:1px solid rgba(34,197,94,.4)}
+.pill.warn{background:var(--amber-dim); color:#ffd08a; border:1px solid rgba(245,158,11,.4)}
+.pill.bad{background:var(--red-dim); color:#ffb3b0; border:1px solid rgba(239,68,68,.4)}
+.pill.muted{background:rgba(255,255,255,.06); color:var(--muted); border:1px solid var(--border)}
+
+.empty-state{padding:60px 20px; text-align:center; color:var(--muted)}
+.empty-state svg{width:40px; height:40px; margin-bottom:12px; opacity:.5}
+.empty-state b{color:var(--ink); display:block; margin-bottom:6px; font-size:14px}
+
+/* ===== VEHICLE DETAIL DRAWER ===== */
+.vehicle-detail-backdrop{
+  position:fixed; inset:0; z-index:80; background:rgba(1,10,20,.72);
+  display:flex; justify-content:flex-end; backdrop-filter:blur(6px);
+}
+.vehicle-detail-backdrop[hidden]{display:none}
+.vehicle-detail-panel{
+  width:min(980px, 96vw); height:100%; overflow:auto; background:var(--navy-950);
+  border-left:1px solid var(--border-2); box-shadow:-18px 0 42px rgba(0,0,0,.35);
+}
+.vehicle-detail-head{
+  position:sticky; top:0; z-index:2; background:rgba(5,18,32,.96);
+  border-bottom:1px solid var(--border); padding:18px 22px; display:flex; gap:16px;
+  align-items:flex-start; justify-content:space-between;
+}
+.vehicle-detail-title{font-size:22px; font-weight:900; color:var(--ink); line-height:1.15}
+.vehicle-detail-sub{margin-top:5px; color:var(--muted); font-size:12px}
+.detail-close{
+  width:38px; height:38px; border-radius:8px; border:1px solid var(--border-2);
+  background:rgba(255,255,255,.04); color:var(--ink); cursor:pointer; font-size:22px; line-height:1;
+}
+.detail-close:hover{border-color:var(--cyan); color:var(--cyan)}
+.vehicle-detail-body{padding:18px 22px 30px}
+.detail-kpis{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px}
+.detail-kpi{
+  border:1px solid var(--border); background:rgba(255,255,255,.025); border-radius:8px;
+  padding:12px; min-height:76px;
+}
+.detail-kpi .label{font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:800}
+.detail-kpi .value{margin-top:8px; color:var(--ink); font-size:15px; font-weight:900; overflow:hidden; text-overflow:ellipsis}
+.detail-kpi .value.pos{color:var(--green)}
+.detail-kpi .value.neg{color:var(--red)}
+.detail-kpi .value.warn{color:var(--amber)}
+.detail-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.detail-section{
+  border:1px solid var(--border); background:rgba(255,255,255,.018); border-radius:8px;
+  padding:14px; min-width:0;
+}
+.detail-section.wide{grid-column:1/-1}
+.detail-section h3{margin:0 0 12px; font-size:13px; color:var(--ink); letter-spacing:.02em}
+.detail-info{display:grid; grid-template-columns:160px 1fr; gap:8px 12px; font-size:12px}
+.detail-info .k{color:var(--muted); font-weight:800}
+.detail-info .v{color:var(--ink); overflow:hidden; text-overflow:ellipsis}
+.bar-list{display:grid; gap:9px}
+.bar-row{display:grid; grid-template-columns:118px 1fr 92px; gap:9px; align-items:center; font-size:11px}
+.bar-label{color:var(--muted); font-weight:800; overflow:hidden; text-overflow:ellipsis}
+.bar-track{height:10px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden}
+.bar-fill{height:100%; border-radius:999px; background:linear-gradient(90deg,var(--cyan),#66e8ff)}
+.bar-fill.green{background:linear-gradient(90deg,var(--green),#86efac)}
+.bar-fill.amber{background:linear-gradient(90deg,var(--amber),#ffd166)}
+.bar-fill.red{background:linear-gradient(90deg,var(--red),#ff8a8a)}
+.bar-value{text-align:right; color:var(--ink); font-variant-numeric:tabular-nums}
+.projection-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px}
+.projection-card{
+  border:1px solid var(--border); border-radius:8px; padding:12px; background:rgba(255,255,255,.025);
+}
+.projection-card .day{font-size:11px; color:var(--muted); font-weight:900; text-transform:uppercase}
+.projection-card .money{margin:8px 0 10px; font-size:17px; font-weight:900}
+.projection-card .meta{font-size:11px; color:var(--muted); line-height:1.5}
+.detail-empty{color:var(--muted); font-size:12px; line-height:1.6; padding:12px; border:1px dashed var(--border); border-radius:8px}
+.compare-table{width:100%; border-collapse:collapse; font-size:11px; white-space:normal; margin-top:12px}
+.compare-table th,.compare-table td{padding:8px; border-bottom:1px solid var(--border); text-align:right}
+.compare-table th:first-child,.compare-table td:first-child{text-align:left}
+.compare-table th{color:var(--muted); font-size:10px; text-transform:uppercase; letter-spacing:.04em; background:rgba(255,255,255,.025)}
+.compare-table td{color:var(--ink); font-variant-numeric:tabular-nums}
+.compare-table .pos{color:var(--green); font-weight:800}
+.compare-table .neg{color:var(--red); font-weight:800}
+.compare-table .warn{color:var(--amber); font-weight:800}
+@media (max-width:900px){
+  .detail-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .detail-grid{grid-template-columns:1fr}
+  .projection-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){
+  .vehicle-detail-head{padding:14px}
+  .vehicle-detail-body{padding:14px}
+  .detail-kpis,.projection-grid{grid-template-columns:1fr}
+  .detail-info{grid-template-columns:1fr}
+  .bar-row{grid-template-columns:1fr; gap:5px}
+  .bar-value{text-align:left}
+}
+/* ===== PARAMS PANEL ===== */
+.params-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+@media (max-width:820px){.params-grid{grid-template-columns:1fr 1fr}}
+.param-card{
+  background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+  border:1px solid var(--border); border-radius:14px; padding:16px;
+}
+.param-card label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:700; display:block; margin-bottom:8px}
+.param-card .prow{display:flex; align-items:center; gap:8px}
+.param-card input{
+  width:100%; background:var(--navy-800); border:1px solid var(--border-2); color:var(--gold);
+  padding:9px 10px; border-radius:8px; font-size:14px; font-weight:800; text-align:right;
+}
+.param-card .unit{color:var(--muted); font-size:13px}
+.param-note{font-size:10.5px; color:var(--muted-2); margin-top:9px; line-height:1.5}
+
+.foot-note{margin-top:26px; font-size:11px; color:var(--muted-2); line-height:1.7; padding:16px; border-top:1px solid var(--border)}
+.foot-note b{color:var(--muted)}
+
+@media print{ .topbar,.upload-grid,.toolbar{display:none} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <img class="brand-logo" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iYiIgZGF0YS1uYW1lPSJDYW1hZGEgMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMjI1MCA0NTAiPgogIDxkZWZzPgogICAgPHN0eWxlPgogICAgICAuYyB7CiAgICAgICAgZmlsbDogIzFkMWQxYjsKICAgICAgfQoKICAgICAgLmQgewogICAgICAgIGZpbGw6ICMzZGFlNjM7CiAgICAgIH0KCiAgICAgIC5lIHsKICAgICAgICBmaWxsOiAjZmZmOwogICAgICB9CgogICAgICAuZiB7CiAgICAgICAgZmlsbDogI2U3M2EzYTsKICAgICAgfQoKICAgICAgLmcgewogICAgICAgIGZpbGw6ICNlOWU5ZTk7CiAgICAgIH0KICAgIDwvc3R5bGU+CiAgPC9kZWZzPgogIDxyZWN0IGNsYXNzPSJjIiB3aWR0aD0iMjI1MCIgaGVpZ2h0PSI0NTAiLz4KICA8Zz4KICAgIDxwYXRoIGNsYXNzPSJlIiBkPSJNOTQ4LjI0LDE1Mi4yM3YxNTkuNmgtMjEuNzd2LTE3NC4xMmgzNS4wMmwxMDEuNDQsMTUyLjM4LDEwMS41NC0xNTIuMzhoMzUuODl2MTc0LjEyaC0yMS43N3YtMTU3LjI0bC0xMDMuMzYsMTU3LjI0aC0yMi4wMmwtMTA0Ljk3LTE1OS42aDBaIi8+CiAgICA8cGF0aCBjbGFzcz0iZSIgZD0iTTE2NzguMzgsMzExLjgzaC0yMS43N3YtMzIuNjRjMC01LjMtLjA5LTkuODUtLjI4LTEzLjY2cy0uODQtNy4wOS0xLjkyLTkuODItMi44Mi00LjkyLTUuMTctNi41NmMtMi4zNS0xLjY0LTUuNjctMi45NC05Ljk3LTMuODQtNC4zLS45LTkuNzUtMS41Mi0xNi4zOC0xLjg2LTYuNjMtLjM0LTE0Ljc3LS41LTI0LjQzLS41aC05Ny44MnY2OC45M2gtMjEuNzd2LTE3NC4xMmgxMjMuMjFjMTMuMzIsMCwyNC40OS40NiwzMy42LDEuNDIsOS4xLjk2LDE2LjYzLDIuMzUsMjIuNTcsNC4yNHMxMC41LDQuMjQsMTMuNzIsNy4wM2MzLjIyLDIuNzksNS41NCw2LjA3LDcuMDMsOS44NXMyLjM1LDguMDIsMi42LDEyLjdjLjI1LDQuNjguNCw5Ljg1LjQsMTUuNTQsMCw3LjI1LS41LDEzLjYyLTEuNTIsMTkuMTEtMS4wMiw1LjQ4LTIuNzIsMTAuMTYtNS4xNywxNC0yLjQ1LDMuODQtNS42NCw2Ljk0LTkuNjMsOS4yM3MtOS4wNCwzLjktMTUuMDgsNC44M2M2LjA0LjksMTAuODcsMi41MSwxNC41Miw0Ljc3czYuNDEsNS4yLDguMzksOC44NmMxLjk4LDMuNjUsMy4yOCw3LjkzLDMuOSwxMi45MS42Miw0Ljk5Ljk2LDEwLjY1Ljk2LDE3djMyLjY0LS4wNlpNMTUwMC42MywyMjQuNzhoMTAxLjQ0YzkuNjYsMCwxNy44MS0uMTUsMjQuNDMtLjUsNi42My0uMzQsMTIuMDgtLjk2LDE2LjM4LTEuODZzNy42Mi0yLjIsOS45Ny0zLjg0LDQuMDYtMy44NCw1LjE3LTYuNTYsMS43My01Ljk4LDEuOTItOS44Mi4yOC04LjM2LjI4LTEzLjY2YzAtNC45Mi0uMDktOS4xMy0uMjgtMTIuN3MtLjg0LTYuNTMtMS45Mi04Ljk1Yy0xLjA4LTIuNDItMi44Mi00LjM0LTUuMTctNS43OXMtNS42Ny0yLjU0LTkuOTctMy4zNC05Ljc1LTEuMy0xNi4zOC0xLjUyYy02LjYzLS4yMi0xNC43Ny0uMzQtMjQuNDMtLjM0aC0xMDEuNDR2NjguOTMtLjA2WiIvPgogICAgPHBhdGggY2xhc3M9ImUiIGQ9Ik0xNzE0Ljk4LDEzNy43MWgyMS43N3YxNzQuMTJoLTIxLjc3czAtMTc0LjEyLDAtMTc0LjEyWiIvPgogICAgPHBhdGggY2xhc3M9ImUiIGQ9Ik0xNzk2LjA4LDMxMS44M2gtMjEuNzd2LTE3NC4xMmgzOC4yMWwxNTkuNiwxNTIuMzV2LTE1Mi4zNWgyMS43N3YxNzQuMTJoLTI5LjAxbC0xNjguNzktMTU1Ljk3djE1NS45N1oiLz4KICAgIDxwYXRoIGNsYXNzPSJlIiBkPSJNMjE3MC4zMywxMzQuMDljMTMuMzIsMCwyNC40OS44MSwzMy42LDIuNDVzMTYuNiw0LjA5LDIyLjUxLDcuMzcsMTAuNDQsNy40MywxMy41OSwxMi40MmMzLjE2LDQuOTksNS41MSwxMC44NCw2Ljk3LDE3LjU2czIuMzUsMTQuMzEsMi42LDIyLjc5Yy4yNSw4LjQ4LjQsMTcuODQuNCwyOC4xMnMtLjEyLDE5LjY2LS40LDI4LjEyYy0uMjgsOC40NS0xLjE1LDE2LjA3LTIuNiwyMi43OXMtMy44MSwxMi41Ny02Ljk3LDE3LjU2Yy0zLjE5LDQuOTktNy43MSw5LjEzLTEzLjU5LDEyLjQycy0xMy40MSw1LjczLTIyLjUxLDcuMzdjLTkuMSwxLjY0LTIwLjMxLDIuNDUtMzMuNiwyLjQ1aC02NS41MmMtMTMuMzIsMC0yNC40OS0uODEtMzMuNi0yLjQ1LTkuMS0xLjY0LTE2LjYtNC4wOS0yMi41MS03LjM3LTUuOTEtMy4yOC0xMC40NC03LjQzLTEzLjY2LTEyLjQycy01LjU0LTEwLjg0LTcuMDMtMTcuNTZjLTEuNDktNi43Mi0yLjMyLTE0LjMxLTIuNTQtMjIuNzktLjIyLTguNDUtLjM0LTE3Ljg0LS4zNC0yOC4xMnMuMTItMTkuNjYuMzQtMjguMTJjLjIyLTguNDUsMS4wOC0xNi4wNywyLjU0LTIyLjc5LDEuNDktNi43MiwzLjgxLTEyLjU3LDcuMDMtMTcuNTYsMy4yMi00Ljk5LDcuNzctOS4xMywxMy42Ni0xMi40Miw1Ljg4LTMuMjgsMTMuNDEtNS43MywyMi41MS03LjM3LDkuMS0xLjY0LDIwLjMxLTIuNDUsMzMuNi0yLjQ1LDAsMCw2NS41MiwwLDY1LjUyLDBaTTIxNzAuMzMsMjk3LjM0YzkuNiwwLDE3LjcxLS4yOCwyNC4zMS0uODQsNi42My0uNTYsMTIuMDgtMS43MywxNi4zOC0zLjQ3czcuNjItNC4yNCw5Ljk3LTcuNDksNC4wNi03LjU2LDUuMTEtMTIuOTEsMS42Ny0xMS45NSwxLjg2LTE5Ljc5Yy4xOS03LjgzLjI4LTE3LjE5LjI4LTI4LjA1cy0uMDktMjAuMjItLjI4LTI4LjA1Yy0uMTktNy44My0uODEtMTQuNDMtMS44Ni0xOS43OXMtMi43Ni05LjY2LTUuMTEtMTIuOTEtNS42NC01LjczLTkuOTEtNy40OWMtNC4yNy0xLjc3LTkuNzItMi44OC0xNi4zMi0zLjQ3cy0xNC43Ny0uODQtMjQuNDMtLjg0aC02NS41MmMtOS42NiwwLTE3LjgxLjI4LTI0LjQzLjg0LTYuNjMuNTYtMTIuMDgsMS43My0xNi4zOCwzLjQ3LTQuMywxLjczLTcuNjIsNC4yNC05Ljk3LDcuNDlzLTQuMDYsNy41Ni01LjExLDEyLjkxYy0xLjA1LDUuMzYtMS42NywxMS45NS0xLjgzLDE5Ljc5LS4xNSw3LjgzLS4yMiwxNy4xOS0uMjIsMjguMDVzLjA5LDIwLjIyLjI4LDI4LjA1Yy4xOSw3LjgzLjgxLDE0LjQzLDEuODYsMTkuNzksMS4wNSw1LjM2LDIuNzIsOS42Niw1LjA1LDEyLjkxczUuNiw1LjczLDkuOTEsNy40OSw5Ljc1LDIuODgsMTYuMzgsMy40N2M2LjYzLjU2LDE0Ljc3Ljg0LDI0LjQzLjg0aDY1LjU1WiIvPgogICAgPHBvbHlnb24gY2xhc3M9ImUiIHBvaW50cz0iMTM1NS4zNCAxMzcuNzEgMTMyNC4wNyAxMzcuNzEgMTIyNC43MyAzMTEuODMgMTI0Ny42MiAzMTEuODMgMTMzOS41NSAxNTIuMTEgMTQzMS41MiAzMTEuODMgMTQ1NC4zNCAzMTEuODMgMTM1NS4zNCAxMzcuNzEiLz4KICA8L2c+CiAgPGc+CiAgICA8cGF0aCBjbGFzcz0iZSIgZD0iTTExNy4wNSwyMTMuODhjMTEuOTUsMCwyMi4xNy41LDMwLjcyLDEuNDksOC41NS45OSwxNS43MywyLjQ1LDIxLjU4LDQuNCw1Ljg1LDEuOTUsMTAuNTMsNC4zNCwxNCw3LjIxczYuMTYsNi4xNiw4LjA1LDkuODUsMy4xMyw3LjgsMy42OCwxMi4zNmMuNTYsNC41NS44NCw5LjUxLjg0LDE0LjhzLS40NiwxMC4yMi0xLjQyLDE0Ljg2Yy0uOTYsNC42NC0yLjYzLDguODYtNS4wNSwxMi43cy01LjcsNy4yOC05Ljg1LDEwLjI4LTkuNDQsNS41Ny0xNS44OSw3LjY4LTE0LjE1LDMuNzItMjMuMTksNC44Yy05LjA0LDEuMDgtMTkuNiwxLjY0LTMxLjY4LDEuNjRoLTI5LjAxYy0xMC44NywwLTIwLjQxLS40LTI4LjU4LTEuMjQtOC4xNy0uODQtMTUuMi0yLjExLTIxLjA5LTMuODEtNS44OC0xLjctMTAuNzgtMy44NC0xNC42Mi02LjQ3LTMuODQtMi42My02Ljk0LTUuNjctOS4yMy05LjJzLTMuOS03LjUyLTQuODMtMTIuMDEtMS4zNi05LjQ4LTEuMzYtMTQuODloMjEuNzdjMCw2LjkxLjk5LDEyLjMyLDIuOTQsMTYuMjMsMS45NSwzLjkzLDUuMiw2Ljg0LDkuNzUsOC44Myw0LjU1LDEuOTgsMTAuNSwzLjE5LDE3Ljg3LDMuNjgsNy4zNy41LDE2LjUuNzQsMjcuMzcuNzRoMjkuMDFjMTIuNywwLDIzLjIyLS42MiwzMS42Mi0xLjgzczE1LjA4LTMuMTYsMjAuMDctNS44MmM0Ljk5LTIuNjYsOC41Mi02LjE2LDEwLjUzLTEwLjQ0LDIuMDEtNC4yNywzLjA3LTkuNTQsMy4wNy0xNS43cy0uNzEtMTEuMy0yLjExLTE1LjQyYy0xLjM5LTQuMTItNC4xNS03LjM3LTguMjctOS44MnMtOS45MS00LjE4LTE3LjQtNS4yLTE3LjI4LTEuNTUtMjkuMzYtMS41NWgtMjkuOTFjLTEzLjMyLDAtMjQuNjgtLjUtMzQuMTktMS40OS05LjQ4LS45OS0xNy40My0yLjM4LTIzLjg3LTQuMjQtNi40NC0xLjg2LTExLjU1LTQuMTUtMTUuNDItNi45MS0zLjg3LTIuNzYtNi43OC01LjkxLTguNzktOS40OHMtMy4zMS03LjQ5LTMuOS0xMS44Ni0uOS05LjA0LS45LTE0LjEyLjQ2LTEwLjE5LDEuNDItMTQuNzQsMi42OS04LjY0LDUuMjYtMTIuMjljMi41Ny0zLjY1LDYuMDctNi45NCwxMC41My05LjgyczEwLjE5LTUuMjYsMTcuMTktNy4xOCwxNS4zOS0zLjM4LDI1LjI0LTQuMzdjOS44Mi0uOTksMjEuNC0xLjQ5LDM0LjY4LTEuNDloMjEuNzdjMTAuODcsMCwyMC40MS40LDI4LjU4LDEuMTgsOC4xNy43NywxNS4yLDIuMDQsMjEuMDksMy43NXMxMC43OCwzLjgxLDE0LjY4LDYuMzUsNyw1LjU0LDkuMjksOS4wN2MyLjI5LDMuNTMsMy45LDcuNDksNC44MywxMS45NS45Myw0LjQ2LDEuMzYsOS40MSwxLjM2LDE0Ljg2aC0yMS43N2MwLTYuODEtLjk5LTEyLjE0LTIuOTQtMTUuOThzLTUuMi02Ljc1LTkuNzUtOC42Ny0xMC41LTMuMTMtMTcuOS0zLjYyYy03LjQtLjUtMTYuNTQtLjc0LTI3LjQ0LS43NGgtMjEuNzdjLTE0LjUyLDAtMjYuNDQuNS0zNS44MywxLjUyLTkuMzgsMS4wMi0xNi43OCwyLjcyLTIyLjIzLDUuMTctNS40NSwyLjQ1LTkuMjMsNS42Ny0xMS4zMyw5Ljc1LTIuMTEsNC4wOS0zLjE5LDkuMi0zLjE5LDE1LjMsMCwzLjc4LjI4LDcuMTUuODEsMTAuMDlzMS42MSw1LjU0LDMuMjIsNy43NywzLjksNC4wOSw2Ljg0LDUuNiw2Ljg0LDIuNzYsMTEuNjcsMy43NSwxMC43NSwxLjY3LDE3Ljc0LDIuMTFjNywuNCwxNS4zMy42MiwyNC45OS42MmgzMC4wMVoiLz4KICAgIDxwYXRoIGNsYXNzPSJlIiBkPSJNNDkwLjA2LDMxMS44M2gtMjEuNzd2LTE3NC4xMmgzOC4yMWwxNTkuNiwxNTIuMzV2LTE1Mi4zNWgyMS43N3YxNzQuMTJoLTI5LjAxbC0xNjguNzktMTU1Ljk3djE1NS45N1oiLz4KICAgIDxwb2x5Z29uIGNsYXNzPSJlIiBwb2ludHM9IjM0Mi41NyAxMzcuNzEgMzExLjMgMTM3LjcxIDIxMS45NiAzMTEuODMgMjM0Ljg0IDMxMS44MyAzMjYuNzggMTUyLjExIDQxOC43NSAzMTEuODMgNDQxLjU3IDMxMS44MyAzNDIuNTcgMTM3LjcxIi8+CiAgPC9nPgogIDxnPgogICAgPHBvbHlnb24gY2xhc3M9ImQiIHBvaW50cz0iNzU1LjE5IDEzOC4xNyA3NzYuODQgMTM4LjE3IDczMy43MSAzMTEuNzcgNzEyLjA1IDMxMS44MyA3NTUuMTkgMTM4LjE3Ii8+CiAgICA8cG9seWdvbiBjbGFzcz0iZyIgcG9pbnRzPSI3OTguMzIgMTM4LjE3IDgxOS45NyAxMzguMTcgNzc2Ljg0IDMxMS43NyA3NTUuMTkgMzExLjgzIDc5OC4zMiAxMzguMTciLz4KICAgIDxwb2x5Z29uIGNsYXNzPSJnIiBwb2ludHM9Ijg0MC45NSAxMzguMTcgODYyLjYgMTM4LjE3IDgxOS40NyAzMTEuNzcgNzk3LjgyIDMxMS44MyA4NDAuOTUgMTM4LjE3Ii8+CiAgICA8cG9seWdvbiBjbGFzcz0iZiIgcG9pbnRzPSI4ODQuMjUgMTM4LjE3IDkwNS45MSAxMzguMTcgODYyLjc3IDMxMS43NyA4NDEuMTIgMzExLjgzIDg4NC4yNSAxMzguMTciLz4KICA8L2c+Cjwvc3ZnPg==" alt="San Marino"/>
+      <div class="brand-text">
+        <div class="brand-title">GPS 2.0</div>
+        <div class="brand-sub">Painel preditivo de margem e custo financeiro do estoque</div>
+  
+    </div>
+
+    </div>
+    <div class="topbar-actions">
+      <button class="btn" id="btnReset" title="Limpar e carregar outros arquivos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 1 3 6.7" stroke-linecap="round"/><path d="M3 4v6h6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Novo upload
+      </button>
+      <button class="btn btn-gold" id="btnExport" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Exportar Excel
+      </button>
+
+    </div>
+  </div>
+
+  <div class="upload-grid" id="uploadGrid">
+    <label class="dropzone required" id="dzStock">
+      <input type="file" id="fileStock" accept=".xlsx,.xls,.csv"/>
+      <div class="dz-row">
+        <div class="dz-radar" id="dzStockRadar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 13l2-6a2 2 0 0 1 2-1.3h10A2 2 0 0 1 19 7l2 6" stroke-linecap="round" stroke-linejoin="round"/><rect x="2" y="13" width="20" height="6" rx="2"/><circle cx="7" cy="19" r="1.4" fill="currentColor" stroke="none"/><circle cx="17" cy="19" r="1.4" fill="currentColor" stroke="none"/></svg>
+    
+    </div>
+        <div>
+          <div class="dz-title">Relatório de Estoque (NBS)</div>
+          <div class="dz-desc">Arraste o .xlsx do estoque atual aqui, ou clique para escolher o arquivo. Esta é a base do painel - cada linha vira um veículo.</div>
+          <div class="dz-status" id="dzStockStatus"><span class="chip">Nenhum arquivo carregado</span></div>
+    
+    </div>
+  
+    </div>
+    </label>
+
+    <label class="dropzone" id="dzEval">
+      <input type="file" id="fileEval" accept=".xlsx,.xls,.csv"/>
+      <div class="dz-row">
+        <div class="dz-radar" id="dzEvalRadar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    
+    </div>
+        <div>
+          <div class="dz-title">Relatório Auto Avaliar (opcional)</div>
+          <div class="dz-desc">Arraste o .xls de avaliações aqui. Enriquece o estoque com FIPE/AAV quando a placa bate e apoia a decisão de compra.</div>
+          <div class="dz-status" id="dzEvalStatus"><span class="chip">Nenhum arquivo carregado</span></div>
+    
+    </div>
+  
+    </div>
+    </label>
+  </div>
+
+  <div id="dashboard" hidden></div>
+
+  <div id="emptyState" class="empty-state" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13l2-6a2 2 0 0 1 2-1.3h10A2 2 0 0 1 19 7l2 6" stroke-linecap="round" stroke-linejoin="round"/><rect x="2" y="13" width="20" height="6" rx="2"/></svg>
+    <b>Carregue o relatório de estoque para começar</b>
+    O painel calcula médias de mercado, margem por canal (Showroom / Repasse) e alertas de prazo automaticamente.
+  </div>
+
+  <div class="foot-note">
+    <b>Como funciona:</b> os cálculos replicam o painel individual GPS - Média de mercado, Margem D0, Margem com juro acumulado pelos dias em estoque, e datas-limite. Campos em <b style="color:#ffd700">dourado</b> são editáveis (clique e digite); tudo recalcula na hora. Nada é enviado a nenhum servidor - a leitura, o cálculo e a exportação acontecem inteiramente no seu navegador.
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   GPS 2.0
+   Motor de cálculo replica o painel individual (index2.html):
+   Média de mercado, Margem D0, Margem com juro acumulado,
+   datas-limite.
+   ============================================================ */
+
+const PARAMS = {
+  kitPct: 0.05,      // Kit Rafael % sobre custo de aquisição
+  jurosOrig: 0.017,  // arbitragem financeira antiga embutida na margem do sistema
+  juros: 0.015,      // taxa de juros mensal (a.m.)
+  showShare: 0.20,   // participação do kit no canal Showroom
+  repShare: 0.16,    // participação do kit no canal Repasse
+  metaShow: 0.06,    // margem ideal mínima - Showroom
+  metaRep: 0.025     // margem ideal mínima - Repasse
+};
+const PROJECTION_DAYS = [0, 15, 30, 45, 60, 90];
+
+let stockData = [];   // linhas de estoque processadas (objetos)
+let evalData  = [];   // linhas de avaliação processadas (objetos)
+let stockFileName = '', evalFileName = '';
+let sortState = { estoque: {col:null, dir:1}, avaliacoes: {col:null, dir:1} };
+let activeTab = 'estoque';
+let estoqueDetailed = false;
+
+/* ---------------- helpers ---------------- */
+function norm(s){
+  return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+}
+function toNum(v){
+  if(v==null || v==='') return null;
+  if(typeof v==='number') return isFinite(v)?v:null;
+  const raw = String(v).replace(/\./g,'').replace(',','.').replace(/[^0-9.\-]/g,'');
+  const n = Number(raw);
+  return isFinite(n) && raw!=='' ? n : null;
+}
+function brR(v){
+  if(v==null || !isFinite(v)) return '-';
+  const sign = v<0 ? '-' : '';
+  return sign+'R$ '+Math.round(Math.abs(v)).toLocaleString('pt-BR');
+}
+function brPct(v){
+  if(v==null || !isFinite(v)) return '-';
+  return (v*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'%';
+}
+function brDate(d){
+  if(!d || !isFinite(d.getTime())) return '-';
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function addDays(base, n){
+  const d = new Date(base.getTime());
+  d.setDate(d.getDate()+Math.round(n));
+  return d;
+}
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------------- sheet parsing ---------------- */
+function readWorkbook(file){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      try{
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array', cellDates:true});
+        resolve(wb);
+      }catch(err){ reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// Finds the header row inside a sheet by scanning first N rows for tokens, returns {headers, rows}
+function extractTable(ws, mustHaveTokens){
+  const aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:true, blankrows:false});
+  let headerRowIdx = -1;
+  const scanLimit = Math.min(15, aoa.length);
+  for(let i=0;i<scanLimit;i++){
+    const rowNorm = (aoa[i]||[]).map(norm);
+    const hasAll = mustHaveTokens.every(tok => rowNorm.some(c=>c.includes(tok)));
+    if(hasAll){ headerRowIdx = i; break; }
+  }
+  if(headerRowIdx===-1) return null;
+  const headerRow = aoa[headerRowIdx].map(h=>String(h==null?'':h).trim());
+  const idx = {};
+  headerRow.forEach((h,i)=>{ if(h) idx[norm(h)] = i; });
+  const rows = [];
+  for(let r=headerRowIdx+1; r<aoa.length; r++){
+    const row = aoa[r];
+    if(!row || row.every(c=>c==null || c==='')) continue;
+    rows.push(row);
+  }
+  return { idx, rows };
+}
+function pick(row, idxMap, candidates){
+  for(const c of candidates){
+    const key = norm(c);
+    if(key in idxMap){
+      const v = row[idxMap[key]];
+      if(v!==undefined) return v;
+    }
+  }
+  return null;
+}
+function pickContains(row, idxMap, tokens){
+  for(const key in idxMap){
+    if(tokens.every(t=>key.includes(t))){
+      const v = row[idxMap[key]];
+      if(v!=null && v!=='') return v;
+    }
+  }
+  return null;
+}
+
+/* ---------------- build stock rows ---------------- */
+function buildStockRows(table){
+  const { idx, rows } = table;
+  return rows.map(row=>{
+    const placa = pick(row, idx, ['Placa']);
+    if(!placa) return null;
+    return {
+      placa: String(placa).toUpperCase().trim(),
+      patio: pick(row, idx, ['Patio','Pátio']) || '',
+      modelo: pick(row, idx, ['Modelo']) || '',
+      anoMod: pick(row, idx, ['Ano/m','Ano/Mod','Ano']) || '',
+      km: toNum(pick(row, idx, ['KM'])) || 0,
+      situacao: pick(row, idx, ['Descricao Situacao','Descrição Situação','Situacao']) || '',
+      dias: toNum(pick(row, idx, ['Dpt'])) || 0,
+      custo: toNum(pick(row, idx, ['Total Nota Fabrica','Total Nota Fábrica'])) || 0,
+      precoVenda: toNum(pick(row, idx, ['Preço Venda','Preco Venda','Preço Venda Showroom','Preco Venda Showroom'])) || 0,
+      margemSistema: toNum(pick(row, idx, ['Margem Atual','Margem Sistema','Margem'])) || null,
+      // editáveis - prefill via cruzamento por placa (feito depois)
+      refAvaliacao: null, reparo: null, fipe: null, aavB2C: null, refWeb: null, valorApp: null,
+      aavRepasse: null, smRepasse: null, refAAV: null, valorTopDealer: null,
+      obs: ''
+    };
+  }).filter(Boolean);
+}
+
+/* ---------------- build evaluation rows ---------------- */
+function buildEvalRows(table){
+  const { idx, rows } = table;
+  return rows.map(row=>{
+    const placa = pick(row, idx, ['Placa da Avaliacao','Placa da Avaliação']);
+    if(!placa) return null;
+    let dataAval = pick(row, idx, ['Data de Avaliacao','Data de Avaliação']);
+    if(dataAval instanceof Date) dataAval = brDate(dataAval);
+    const b2b = toNum(pick(row, idx, ['ref. AAV B2B']));
+    const b2bOp = toNum(pick(row, idx, ['ref. AAV B2B(OP)']));
+    const web = toNum(pick(row, idx, ['ref. Web']));
+    const webOp = toNum(pick(row, idx, ['ref. Web(OP)']));
+    return {
+      placa: String(placa).toUpperCase().trim(),
+      status: pick(row, idx, ['Status']) || '',
+      data: dataAval || '',
+      marca: pick(row, idx, ['Marca']) || '',
+      modelo: pick(row, idx, ['Modelo']) || '',
+      versao: pick(row, idx, ['Versao','Versão']) || '',
+      km: toNum(pick(row, idx, ['KM'])) || 0,
+      valorAvaliado: toNum(pick(row, idx, ['Valor avaliado'])) || 0,
+      gastoPrevisto: toNum(pick(row, idx, ['Gasto previsto'])) || 0,
+      // "sugestões de preço" que o app Auto Avaliar oferece:
+      fipe: toNum(pick(row, idx, ['FIPE'])),
+      valorApp: toNum(pick(row, idx, ['Valor APP'])),
+      aavB2C: toNum(pick(row, idx, ['ref. AAV B2C'])),
+      refWeb: (web && web>0) ? web : webOp,
+      refAAV: toNum(pick(row, idx, ['ref. AAV'])),
+      aavRepasse: (b2b && b2b>0) ? b2b : b2bOp,
+      valorTopDealer: toNum(pick(row, idx, ['Valor Top Dealer']))
+    };
+  }).filter(Boolean);
+}
+
+/* ---------------- cross-reference stock <-> evaluations ---------------- */
+function crossReference(){
+  const byPlate = {};
+  evalData.forEach(e=>{ byPlate[e.placa] = e; });
+  let matched = 0;
+  stockData.forEach(v=>{
+    const e = byPlate[v.placa];
+    if(e){
+      matched++;
+      if(v.refAvaliacao==null && e.valorAvaliado>0) v.refAvaliacao = e.valorAvaliado;
+      if(v.reparo==null && e.gastoPrevisto!=null) v.reparo = e.gastoPrevisto;
+      if(v.fipe==null && e.fipe!=null) v.fipe = e.fipe;
+      if(v.aavB2C==null && e.aavB2C!=null) v.aavB2C = e.aavB2C;
+      if(v.refWeb==null && e.refWeb!=null) v.refWeb = e.refWeb;
+      if(v.valorApp==null && e.valorApp!=null) v.valorApp = e.valorApp;
+      if(v.aavRepasse==null && e.aavRepasse!=null) v.aavRepasse = e.aavRepasse;
+      if(v.refAAV==null && e.refAAV!=null) v.refAAV = e.refAAV;
+      if(v.valorTopDealer==null && e.valorTopDealer!=null) v.valorTopDealer = e.valorTopDealer;
+    }
+  });
+  return matched;
+}
+
+/* ---------------- core GPS calculation ---------------- */
+function computeStock(v){
+  const custo = v.custo||0;
+  const reparo = v.reparo||0;
+  const dias = v.dias||0;
+  const mediaShow = avgMoney(refsShowroom(v));
+  // Repasse: apenas refer?ncias de venda B2B/atacado; AAV Compra n?o entra aqui.
+  const mediaRep  = avgMoney(refsRepasseVenda(v));
+
+  const custoBase = custo + reparo + custo*PARAMS.kitPct;
+
+  const margemD0Show = (v.precoVenda && v.precoVenda>0)
+    ? ((v.precoVenda - custo - reparo) - (PARAMS.kitPct*custo)) / v.precoVenda : null;
+  const margemD0Rep = (v.smRepasse && v.smRepasse>0)
+    ? (v.smRepasse - custo)/v.smRepasse
+    : (mediaRep!=null ? (mediaRep-custo)/mediaRep : null);
+
+  const margemAtualShow = mediaShow!=null
+    ? mediaShow - custo - reparo - (custo*(PARAMS.kitPct*(1-PARAMS.showShare)))
+      - (custo*((PARAMS.kitPct*PARAMS.showShare)+PARAMS.juros)*(dias/30))
+    : null;
+  const margemAtualRep = mediaRep!=null
+    ? mediaRep - custo - (custo*((PARAMS.kitPct*PARAMS.repShare)+PARAMS.juros)*(dias/30))
+    : null;
+
+  let statusD0;
+  if(!custo) statusD0 = 'Preencher custo';
+  else if(mediaShow==null && mediaRep==null) statusD0 = 'Preencher dados de mercado';
+  else if((margemD0Show!=null && margemD0Show>=PARAMS.metaShow) || (margemD0Rep!=null && margemD0Rep>=PARAMS.metaRep)) statusD0 = 'OK - cobre meta';
+  else statusD0 = 'Abaixo da meta';
+  let statusJuros;
+  const prejuizoVendaShowroom = margemAtualShow!=null && margemAtualShow<0;
+  const prejuizoRepasse = margemAtualRep!=null && margemAtualRep<0;
+  if(margemAtualShow==null && margemAtualRep==null) statusJuros = 'Sem dados';
+  else if(prejuizoVendaShowroom && prejuizoRepasse) statusJuros = 'Prejuízo nos 2 canais';
+  else if(prejuizoVendaShowroom) statusJuros = 'Prejuízo Venda Showroom';
+  else if(prejuizoRepasse) statusJuros = 'Prejuízo Repasse';
+  else statusJuros = 'Margem positiva';
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  let dtIdealShow=null, dtZeroShow=null, dtIdealRep=null, dtZeroRep=null;
+  if(mediaShow!=null && custo>0){
+    const dailyShow = ((custo*PARAMS.juros)+(custo*(PARAMS.kitPct*PARAMS.showShare)))/30;
+    if(dailyShow>0){
+      const diasIdeal = (mediaShow-custo-reparo-(custo*(PARAMS.kitPct*(1-PARAMS.showShare)))-(PARAMS.metaShow*mediaShow))/dailyShow;
+      const diasZero = (mediaShow-custo-reparo-(custo*(PARAMS.kitPct*(1-PARAMS.showShare))))/dailyShow;
+      dtIdealShow = addDays(today, diasIdeal-dias);
+      dtZeroShow = addDays(today, diasZero-dias);
+    }
+  }
+  if(mediaRep!=null && custo>0){
+    const dailyRep = ((custo*PARAMS.juros)+(custo*(PARAMS.kitPct*PARAMS.repShare)))/30;
+    if(dailyRep>0){
+      const diasIdeal = (mediaRep-custo-(PARAMS.metaRep*mediaRep))/dailyRep;
+      const diasZero = (mediaRep-custo)/dailyRep;
+      dtIdealRep = addDays(today, diasIdeal-dias);
+      dtZeroRep = addDays(today, diasZero-dias);
+    }
+  }
+
+  return { mediaShow, mediaRep, custoBase, margemD0Show, margemD0Rep, margemAtualShow, margemAtualRep,
+           statusD0, statusJuros, prejuizoVendaShowroom, prejuizoRepasse, dtIdealShow, dtZeroShow, dtIdealRep, dtZeroRep };
+}
+
+function computeEval(e){
+  const mediaShow = avgMoney(refsShowroomEval(e));
+  const mediaRepEv = avgMoney(refsRepasseEval(e));
+  const margemShow = mediaShow!=null
+    ? ((mediaShow - e.valorAvaliado - e.gastoPrevisto) - (PARAMS.kitPct*e.valorAvaliado))/mediaShow : null;
+  const margemRep = mediaRepEv!=null ? (mediaRepEv - e.valorAvaliado)/mediaRepEv : null;
+  let reco;
+  if(!e.valorAvaliado) reco = 'Sem valor avaliado';
+  else if(mediaShow==null && margemRep==null) reco = 'Sem dados de mercado';
+  else if((margemShow!=null && margemShow>=PARAMS.metaShow) || (margemRep!=null && margemRep>=PARAMS.metaRep)) reco = 'Comprar - cobre meta';
+  else reco = 'Negociar / revisar valor';
+  return { mediaShow, mediaRep: mediaRepEv, margemShow, margemRep, reco };
+}
+
+
+function projectionLabel(add){
+  return add===0 ? 'Hoje' : `D+${add}`;
+}
+function buildProjectionPoints(casco, preco, kitOperacional, dias){
+  return PROJECTION_DAYS.map(add => {
+    const diasProjetados = dias + add;
+    const jurosPeriodo = casco * (diasProjetados / 30) * PARAMS.juros;
+    const custoTotal = casco + kitOperacional + jurosPeriodo;
+    const margemProjetada = preco - custoTotal;
+    return { add, diasProjetados, jurosPeriodo, custoTotal, margemProjetada };
+  });
+}
+function computeProjection(v){
+  const casco = v.custo || 0;
+  const preco = v.precoVenda || 0;
+  const margemAtual = v.margemSistema;
+  const dias = v.dias || 0;
+  if(!casco || !preco || margemAtual == null) return null;
+
+  const kitTotal = preco - casco - margemAtual;
+  const jurosArbitrado = casco * PARAMS.jurosOrig;
+  const kitOperacional = kitTotal - jurosArbitrado;
+  const kitPuro = kitOperacional;
+  const margemLiquidaInicial = margemAtual + jurosArbitrado;
+  const pontos = buildProjectionPoints(casco, preco, kitOperacional, dias).map(pt=>({
+    ...pt,
+    quedaVsInicial: margemLiquidaInicial - pt.margemProjetada
+  }));
+
+  const aavCasco = v.refAvaliacao || 0;
+  const aavPreco = v.aavB2C || 0;
+  const aavKitOperacional = kitOperacional != null && isFinite(kitOperacional)
+    ? kitOperacional
+    : Math.max(0, aavCasco * (PARAMS.kitPct - PARAMS.jurosOrig));
+  const aav = aavCasco>0 && aavPreco>0 ? {
+    casco: aavCasco,
+    preco: aavPreco,
+    kitOperacional: aavKitOperacional,
+    pontos: buildProjectionPoints(aavCasco, aavPreco, aavKitOperacional, dias)
+  } : null;
+
+  return { casco, preco, margemAtual, diferenca: kitTotal, kitTotal, jurosArbitrado, financeiroProvisionado: jurosArbitrado,
+           kitPuro, kitOperacional, margemLiquidaInicial, pontos, aav };
+}
+/* ---------------- status pill styling ---------------- */
+function pillClass(status){
+  if(['OK - cobre meta','Margem positiva','Comprar - cobre meta'].includes(status)) return 'ok';
+  if(['Abaixo da meta','Prejuízo Venda Showroom','Prejuízo Repasse','Prejuízo nos 2 canais','Negociar / revisar valor'].includes(status)) return 'bad';
+  if(['Preencher custo','Preencher dados de mercado','Sem dados','Sem valor avaliado','Sem dados de mercado'].includes(status)) return 'warn';
+  return 'muted';
+}
+</script>
+<script>
+/* ============================================================
+   UI wiring
+   ============================================================ */
+const $ = id=>document.getElementById(id);
+
+function setDzStatus(which, chips){
+  const el = $(which==='stock'?'dzStockStatus':'dzEvalStatus');
+  el.innerHTML = chips.map(c=>`<span class="chip ${c.cls||''}">${c.txt}</span>`).join('');
+}
+function setRadar(which, state){
+  const el = $(which==='stock'?'dzStockRadar':'dzEvalRadar');
+  el.classList.remove('spin','done');
+  if(state==='spin') el.classList.add('spin');
+  if(state==='done') el.classList.add('done');
+}
+
+async function handleFile(which, file){
+  if(!file) return;
+  const dz = $(which==='stock'?'dzStock':'dzEval');
+  setRadar(which,'spin');
+  setDzStatus(which, [{txt:'Lendo '+file.name+'...'}]);
+  try{
+    const wb = await readWorkbook(file);
+    let table = null, sheetUsed = null;
+    const tryTokens = which==='stock' ? ['placa','modelo'] : ['placa','fipe'];
+    for(const name of wb.SheetNames){
+      const t = extractTable(wb.Sheets[name], tryTokens);
+      if(t){ table = t; sheetUsed = name; break; }
+    }
+    if(!table){
+      setRadar(which,'');
+      setDzStatus(which, [{txt:'Não encontrei as colunas esperadas neste arquivo', cls:'err'}]);
+      return;
+    }
+    if(which==='stock'){
+      stockData = buildStockRows(table);
+      stockFileName = file.name;
+      setDzStatus('stock', [
+        {txt: file.name, cls:'ok'},
+        {txt: stockData.length+' veículos'}
+      ]);
+    } else {
+      evalData = buildEvalRows(table);
+      evalFileName = file.name;
+      setDzStatus('eval', [
+        {txt: file.name, cls:'ok'},
+        {txt: evalData.length+' avaliações'}
+      ]);
+    }
+    setRadar(which,'done');
+    dz.classList.add('ok');
+    afterLoad();
+  }catch(err){
+    console.error(err);
+    setRadar(which,'');
+    setDzStatus(which, [{txt:'Erro ao ler o arquivo', cls:'err'}]);
+  }
+}
+
+function afterLoad(){
+  if(stockData.length===0) return;
+  const matched = crossReference();
+  if(evalData.length){
+    setDzStatus('eval', [
+      {txt: evalFileName, cls:'ok'},
+      {txt: evalData.length+' avaliações'},
+      {txt: matched+' cruzadas'}
+    ]);
+  }
+  $('emptyState').style.display='none';
+  $('dashboard').hidden = false;
+  $('btnExport').disabled = false;
+  renderDashboard();
+}
+
+/* ---------------- dashboard shell ---------------- */
+function renderDashboard(){
+  if(!['estoque','parametros'].includes(activeTab)) activeTab = 'estoque';
+  const d = $('dashboard');
+  d.innerHTML = `
+    <div class="stats-row" id="statsRow"></div>
+    <div class="tabs">
+      <div class="tab ${activeTab==='estoque'?'active':''}" data-tab="estoque">Painel Estoque (${stockData.length})</div>
+<div class="tab ${activeTab==='parametros'?'active':''}" data-tab="parametros">Parâmetros</div>
+
+    </div>
+    <div id="tabBody"></div>
+  `;
+  d.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{ activeTab=t.dataset.tab; renderDashboard(); }));
+  renderStats();
+  if(activeTab==='estoque') renderEstoqueTab();
+  else renderParametrosTab();
+}
+
+function avgDeviation(rows, baseFn, refFn){
+  const valid = rows.map(v=>({base:baseFn(v), ref:refFn(v)}))
+    .filter(x=>x.base!=null && isFinite(x.base) && x.ref!=null && isFinite(x.ref) && x.ref>0);
+  if(!valid.length) return { count:0, amountAvg:null, pctAvg:null };
+  const amountAvg = valid.reduce((sum,x)=>sum + (x.base - x.ref), 0) / valid.length;
+  const pctAvg = valid.reduce((sum,x)=>sum + ((x.base - x.ref) / x.ref), 0) / valid.length;
+  return { count:valid.length, amountAvg, pctAvg };
+}
+function signedBrR(v){
+  if(v==null || !isFinite(v)) return '-';
+  return (v>=0?'+ ':'- ') + brR(Math.abs(v));
+}
+function signedPct(v){
+  if(v==null || !isFinite(v)) return '-';
+  return (v>=0?'+':'') + brPct(v);
+}
+function renderDeviationCard(title, dev, positiveText, negativeText){
+  const positive = dev.amountAvg!=null && dev.amountAvg>=0;
+  const tone = positive ? 'green' : 'red';
+  const note = dev.count ? (positive ? positiveText : negativeText) : 'Sem carros suficientes com as duas referencias preenchidas.';
+  return `<div class="deviation-card ${dev.count?tone:''}">
+    <div class="brief-kicker">Analise de Desvios Medios</div>
+    <div class="brief-main">${escapeHtml(title)}</div>
+    <div class="deviation-values">
+      <span class="deviation-money">${signedBrR(dev.amountAvg)}</span>
+      <span class="deviation-pct">${signedPct(dev.pctAvg)}</span>
+    </div>
+    <div class="deviation-note">${escapeHtml(note)} Base: ${dev.count} carro${dev.count===1?'':'s'}.</div>
+  </div>`;
+}
+
+function renderStats(){
+  const computed = stockData.map(v=>({v, c:computeStock(v)}));
+  const total = stockData.length;
+  const pct = n => total ? Math.round((n/total)*100) : 0;
+  const disponivel = stockData.filter(v=>norm(v.situacao).includes('dispon') && !norm(v.situacao).includes('indispon')).length;
+  const indisponivel = stockData.filter(v=>norm(v.situacao).includes('indispon')).length;
+  const ok = computed.filter(x=>x.c.statusD0==='OK - cobre meta').length;
+  const abaixo = computed.filter(x=>x.c.statusD0==='Abaixo da meta').length;
+  const prejuizoVenda = computed.filter(x=>x.c.prejuizoVendaShowroom).length;
+  const prejuizoRepasse = computed.filter(x=>x.c.prejuizoRepasse).length;
+  const prejuizo2 = computed.filter(x=>x.c.prejuizoVendaShowroom && x.c.prejuizoRepasse).length;
+  const prejuizo = computed.filter(x=>x.c.prejuizoVendaShowroom || x.c.prejuizoRepasse).length;
+  const indisponiveis = computed.filter(x=>norm(x.v.situacao).includes('indispon'));
+  const indisponivelPrejuizoShow = indisponiveis.filter(x=>x.c.prejuizoVendaShowroom).length;
+  const indisponivelPrejuizoRep = indisponiveis.filter(x=>x.c.prejuizoRepasse).length;
+  const risco = abaixo + prejuizo;
+  const score = Math.max(0, Math.min(100, pct(ok) - Math.round(pct(prejuizo)*0.7)));
+  const scoreTone = score >= 70 ? 'green' : score >= 45 ? 'amber' : 'red';
+  const scoreShow = Math.max(0, 100 - pct(prejuizoVenda));
+  const scoreRep = Math.max(0, 100 - pct(prejuizoRepasse));
+  const scoreGeral = Math.max(0, 100 - pct(prejuizo));
+  const tone = v => v >= 70 ? 'green' : v >= 45 ? 'amber' : 'red';
+  const alertTone = prejuizo > 0 ? 'danger' : (abaixo > 0 ? 'alert' : '');
+  const mainAlert = prejuizo > 0
+    ? `${prejuizo} carro${prejuizo===1?'':'s'} com prejuízo financeiro (${prejuizoVenda} venda showroom | ${prejuizoRepasse} repasse)`
+    : abaixo > 0
+      ? `${abaixo} carro${abaixo===1?'':'s'} abaixo da meta`
+      : 'Estoque sem alerta crítico';
+  const focusHint = prejuizo > 0 ? 'Clique nos cards de prejuízo para ver o canal: Venda Showroom, Repasse ou ambos.'
+    : abaixo > 0 ? 'Clique em Abaixo da meta para revisar preço e margem.'
+    : 'Acompanhe diariamente para manter o estoque saudável.';
+  const desvioAvaliacaoAuto = avgDeviation(stockData, v=>v.refAvaliacao, v=>refCompraAAV(v));
+  const desvioVendaB2C = avgDeviation(stockData, v=>v.precoVenda, v=>v.aavB2C);
+  const cards = [
+    {label:'Veículos no estoque', num:total, pct:100, cls:'', action:'all', hint:'Ver todos os carros'},
+    {label:'Disponíveis', num:disponivel, pct:pct(disponivel), cls:'cyan', action:'available', hint:'Detalhar disponíveis'},
+    {label:'Indisponíveis', num:indisponivel, pct:pct(indisponivel), cls:'amber', action:'unavailable', hint:'Detalhar indisponíveis'},
+    {label:'Indisp. prejuízo showroom', num:indisponivelPrejuizoShow, pct:pct(indisponivelPrejuizoShow), cls:'red', action:'unavailableLossShow', hint:'Indisponíveis com prejuízo na venda showroom'},
+    {label:'Indisp. prejuízo repasse', num:indisponivelPrejuizoRep, pct:pct(indisponivelPrejuizoRep), cls:'red', action:'unavailableLossRep', hint:'Indisponíveis com prejuízo no repasse'},
+    {label:'Margem OK (meta)', num:ok, pct:pct(ok), cls:'green', action:'ok', hint:'Ver carros saudáveis'},
+    {label:'Prejuízo Venda Showroom', num:prejuizoVenda, pct:pct(prejuizoVenda), cls:'red', action:'lossShow', hint:'Inclui prejuízo em venda showroom, mesmo nos 2 canais'},
+    {label:'Prejuízo Repasse', num:prejuizoRepasse, pct:pct(prejuizoRepasse), cls:'red', action:'lossRep', hint:'Inclui prejuízo em repasse, mesmo nos 2 canais'},
+    {label:'Prejuízo 2 canais', num:prejuizo2, pct:pct(prejuizo2), cls:'red', action:'lossBoth', hint:'Venda Showroom e repasse'},
+  ];
+  $('statsRow').innerHTML = `
+        <div class="dashboard-brief" style="grid-column:1/-1">
+      <button type="button" class="brief-card health-action ${prejuizo>0?'danger':''}" data-action="interestLoss" title="Ver todos os prejuízos">
+        <div class="brief-kicker">Saúde Geral</div>
+        <div class="brief-main ${tone(scoreGeral)}">${scoreGeral}%</div>
+        <div class="health-bar"><div class="health-fill" style="width:${scoreGeral}%"></div></div>
+        <div class="brief-note">${prejuizo} carro${prejuizo===1?'':'s'} com prejuízo em pelo menos uma margem.</div>
+      </button>
+      <button type="button" class="brief-card health-action ${prejuizoVenda>0?'danger':''}" data-action="lossShow" title="Ver Margem Venda Showroom">
+        <div class="brief-kicker">Alerta Venda Showroom</div>
+        <div class="brief-main ${tone(scoreShow)}">${scoreShow}% saudável</div>
+        <div class="health-bar"><div class="health-fill" style="width:${scoreShow}%"></div></div>
+        <div class="brief-note">${prejuizoVenda} carro${prejuizoVenda===1?'':'s'} com prejuízo na Margem Venda Showroom.</div>
+      </button>
+      <button type="button" class="brief-card health-action ${prejuizoRepasse>0?'danger':''}" data-action="lossRep" title="Ver Margem Repasse">
+        <div class="brief-kicker">Alerta Repasse</div>
+        <div class="brief-main ${tone(scoreRep)}">${scoreRep}% saudável</div>
+        <div class="health-bar"><div class="health-fill" style="width:${scoreRep}%"></div></div>
+        <div class="brief-note">${prejuizoRepasse} carro${prejuizoRepasse===1?'':'s'} com prejuízo na Margem Repasse.</div>
+      </button>
+    </div>
+    <div class="deviation-panel">
+      ${renderDeviationCard('Valor avaliado vs. AAV Compra', desvioAvaliacaoAuto, 'Na media, o valor avaliado ficou acima da AAV Compra.', 'Na media, o valor avaliado ficou abaixo da AAV Compra.')}
+      ${renderDeviationCard('Preco de Venda vs. B2C', desvioVendaB2C, 'Na media, a projecao de venda ficou acima do B2C.', 'Na media, a projecao de venda ficou abaixo do B2C.')}
+    </div>
+    ${cards.map(card=>`
+      <button type="button" class="stat-card ${card.cls}" data-action="${card.action}" title="${card.hint}">
+        <div class="stat-head"><div class="stat-num">${card.num}</div><div class="stat-pct">${card.pct}%</div></div>
+        <div class="stat-label">${card.label}</div>
+        <div class="stat-bar"><div class="stat-fill" style="width:${card.pct}%"></div></div>
+        <div class="stat-action">${card.hint}</div>
+      </button>
+    `).join('')}
+  `;
+  $('statsRow').querySelectorAll('.stat-card[data-action], .health-action[data-action]').forEach(btn=>{
+    btn.addEventListener('click', ()=>applyDashboardFilter(btn.dataset.action));
+  });
+}
+
+function applyDashboardFilter(action){
+  activeTab = 'estoque';
+  filterState.estoque = { patio:'', situacao:'', statusD0:'', statusJuros:'', gps:'' };
+  sortState.estoque = { col:null, dir:1 };
+  if(action==='available') filterState.estoque.situacao = 'disp';
+  if(action==='unavailable') filterState.estoque.situacao = 'indisp';
+  if(action==='unavailableLossShow'){ filterState.estoque.situacao = 'indisp'; filterState.estoque.statusJuros = '__lossShow'; }
+  if(action==='unavailableLossRep'){ filterState.estoque.situacao = 'indisp'; filterState.estoque.statusJuros = '__lossRep'; }
+  if(action==='ok') filterState.estoque.statusD0 = 'OK - cobre meta';
+  if(action==='below') filterState.estoque.statusD0 = 'Abaixo da meta';
+  if(action==='missing') filterState.estoque.statusD0 = '__missing';
+  if(action==='interestLoss') filterState.estoque.statusJuros = '__loss';
+  if(action==='lossShow') filterState.estoque.statusJuros = '__lossShow';
+  if(action==='lossRep') filterState.estoque.statusJuros = '__lossRep';
+  if(action==='lossBoth') filterState.estoque.statusJuros = 'Prejuízo nos 2 canais';
+  renderDashboard();
+  setTimeout(()=>{$('tabBody')?.scrollIntoView({behavior:'smooth', block:'start'});}, 0);
+}
+
+/* ---------------- Estoque tab ---------------- */
+const STOCK_COLS = [
+  {key:'placa', label:'Placa'}, {key:'patio', label:'Pátio'}, {key:'modelo', label:'Modelo'},
+  {key:'anoMod', label:'Ano/Mod'}, {key:'km', label:'KM', num:1}, {key:'situacao', label:'Situação'},
+  {key:'dias', label:'Dias Estoque', num:1},
+  {key:'custo', label:'Custo Aquisição', num:1, money:1},
+  {key:'reparo', label:'Reparo', edit:1, money:1},
+  {key:'fipe', label:'FIPE', edit:1, money:1},
+  {key:'aavB2C', label:'AAV B2C', edit:1, money:1},
+  {key:'refWeb', label:'Ref. Web', edit:1, money:1},
+  {key:'valorApp', label:'Valor APP', edit:1, money:1},
+  {key:'precoVenda', label:'Preço Venda Showroom', edit:1, money:1},
+  {key:'_mediaShow', label:'Média Showroom', calc:1, money:1},
+  {key:'aavRepasse', label:'AAV B2B Venda', edit:1, money:1},
+  {key:'refAAV', label:'AAV Compra', edit:1, money:1},
+  {key:'valorTopDealer', label:'Valor Top Dealer', edit:1, money:1},
+  {key:'smRepasse', label:'SM Repasse', edit:1, money:1},
+  {key:'_mediaRep', label:'Média Repasse', calc:1, money:1},
+  {key:'_margemD0Show', label:'Margem D0 Show %', calc:1, pct:1},
+  {key:'_margemD0Rep', label:'Margem D0 Rep %', calc:1, pct:1},
+  {key:'_margemAtualShow', label:'Margem Atual Show', calc:1, money:1, signed:1},
+  {key:'_margemAtualRep', label:'Margem Atual Rep', calc:1, money:1, signed:1},
+  {key:'_statusD0', label:'Status Margem D0', calc:1, pill:1},
+  {key:'_statusJuros', label:'Status c/ Juro', calc:1, pill:1},
+  {key:'_dtIdealShow', label:'Limite Ideal Show', calc:1, date:1},
+  {key:'_dtZeroShow', label:'Zera Show', calc:1, date:1},
+  {key:'_dtIdealRep', label:'Limite Ideal Rep', calc:1, date:1},
+  {key:'_dtZeroRep', label:'Zera Rep', calc:1, date:1},
+];
+
+const STOCK_SUMMARY_COLS = [
+  {key:'placa', label:'Placa'},
+  {key:'modelo', label:'Modelo'},
+  {key:'anoMod', label:'Ano'},
+  {key:'dias', label:'Dias'},
+  {key:'custo', label:'Custo', money:1},
+  {key:'precoVenda', label:'Preço Venda Showroom', edit:1, money:1},
+  {key:'_margemAtualShow', label:'Margem Venda Showroom', calc:1, money:1, signed:1},
+  {key:'_margemAtualRep', label:'Margem Repasse', calc:1, money:1, signed:1},
+  {key:'_statusJuros', label:'Status Margem', calc:1, pill:1},
+  {key:'_detail', label:'Detalhe'}
+];
+function currentStockCols(){ return estoqueDetailed ? STOCK_COLS : STOCK_SUMMARY_COLS; }
+let filterState = {
+  estoque: { patio:'', situacao:'', statusD0:'', statusJuros:'', gps:'' },
+  avaliacoes: { reco:'' }
+};
+const SORT_OPTIONS_ESTOQUE = [
+  {key:'placa', label:'Placa'}, {key:'modelo', label:'Modelo'}, {key:'patio', label:'Pátio'},
+  {key:'km', label:'KM'}, {key:'dias', label:'Dias em Estoque'}, {key:'custo', label:'Custo Aquisição'},
+  {key:'_mediaShow', label:'Média Showroom'}, {key:'_mediaRep', label:'Média Repasse'},
+  {key:'_margemD0Show', label:'Margem D0 Showroom %'}, {key:'_margemD0Rep', label:'Margem D0 Repasse %'},
+  {key:'_margemAtualShow', label:'Margem Atual Showroom'}, {key:'_margemAtualRep', label:'Margem Atual Repasse'},
+];
+
+function estoqueFiltered(){
+  const q = norm($('estQ')?.value||'');
+  const f = filterState.estoque;
+  let rows = stockData.map(v=>({v, c:computeStock(v)}));
+  if(q) rows = rows.filter(r=> norm(r.v.placa).includes(q) || norm(r.v.modelo).includes(q));
+  if(f.patio) rows = rows.filter(r=>r.v.patio===f.patio);
+  if(f.situacao) rows = rows.filter(r=> f.situacao==='disp' ? norm(r.v.situacao).includes('dispon') && !norm(r.v.situacao).includes('indispon') : norm(r.v.situacao).includes('indispon'));
+  if(f.statusD0) rows = rows.filter(r=> f.statusD0==='__missing' ? r.c.statusD0.startsWith('Preencher') : r.c.statusD0===f.statusD0);
+  if(f.statusJuros) rows = rows.filter(r=> f.statusJuros==='__loss' ? (r.c.prejuizoVendaShowroom || r.c.prejuizoRepasse) : f.statusJuros==='__lossShow' ? r.c.prejuizoVendaShowroom : f.statusJuros==='__lossRep' ? r.c.prejuizoRepasse : r.c.statusJuros===f.statusJuros);
+  if(f.gps) rows = rows.filter(r=>gpsConceptStatus(r.v, r.c)===f.gps);
+  const s = sortState.estoque;
+  if(s.col){
+    rows.sort((a,b)=>{
+      const va = getSortVal(a,s.col), vb = getSortVal(b,s.col);
+      if(va==null && vb==null) return 0;
+      if(va==null) return 1; if(vb==null) return -1;
+      if(va<vb) return -1*s.dir; if(va>vb) return 1*s.dir; return 0;
+    });
+  }
+  return rows;
+}
+function getSortVal(r,col){
+  const map = {placa:r.v.placa, patio:r.v.patio, modelo:r.v.modelo, km:r.v.km, dias:r.v.dias, custo:r.v.custo,
+    _mediaShow:r.c.mediaShow, _mediaRep:r.c.mediaRep, _margemD0Show:r.c.margemD0Show, _margemD0Rep:r.c.margemD0Rep,
+    _margemAtualShow:r.c.margemAtualShow, _margemAtualRep:r.c.margemAtualRep};
+  return map[col];
+}
+
+function renderEstoqueTab(){
+  const patios = [...new Set(stockData.map(v=>v.patio))].filter(Boolean).sort();
+  const f = filterState.estoque;
+  const s = sortState.estoque;
+  const body = $('tabBody');
+  body.innerHTML = `
+    <div class="toolbar">
+      <input type="text" id="estQ" placeholder="Buscar placa ou modelo..."/>
+      <select id="estPatio"><option value="">Todos os pátios</option>${patios.map(p=>`<option ${f.patio===p?'selected':''}>${escapeHtml(p)}</option>`).join('')}</select>
+      <div class="sort-ctrl">
+        <label>Ordenar por</label>
+        <select id="estSortCol">
+          <option value="">-</option>
+          ${SORT_OPTIONS_ESTOQUE.map(o=>`<option value="${o.key}" ${s.col===o.key?'selected':''}>${o.label}</option>`).join('')}
+        </select>
+        <button class="btn btn-sm" id="estSortDir" title="Inverter direção">${s.dir>0?'↑ Crescente':'↓ Decrescente'}</button>
+  
+    </div>
+      <div class="spacer"></div>
+      <button class="btn btn-sm" id="estViewMode">${estoqueDetailed?'Visão resumo':'Visão detalhada'}</button>
+      <button class="btn btn-sm" id="estClear">Limpar filtros</button>
+
+    </div>
+    <div class="pillbar" id="estPillbar">
+      <span class="pillbar-label">Situação:</span>
+      ${pillBtn('sitAll','Todas', !f.situacao)}
+      ${pillBtn('sitDisp','Disponível', f.situacao==='disp')}
+      ${pillBtn('sitIndisp','Indisponível', f.situacao==='indisp')}
+      <span class="pillbar-label">Margem D0:</span>
+      ${pillBtn('d0All','Todos', !f.statusD0)}
+      ${pillBtn('d0Ok','OK - cobre meta', f.statusD0==='OK - cobre meta','ok')}
+      ${pillBtn('d0Bad','Abaixo da meta', f.statusD0==='Abaixo da meta','bad')}
+      <span class="pillbar-label">Juros:</span>
+      ${pillBtn('jrAll','Todos', !f.statusJuros)}
+      ${pillBtn('jrOk','Margem positiva', f.statusJuros==='Margem positiva','ok')}      ${pillBtn('jrLoss','Todos prejuízos', f.statusJuros==='__loss','bad')}
+      ${pillBtn('jrShow','Margem Venda Showroom', f.statusJuros==='__lossShow','bad')}
+      ${pillBtn('jrRep','Margem Repasse', f.statusJuros==='__lossRep','bad')}
+      ${pillBtn('jr2','Prejuízo 2 canais', f.statusJuros==='Prejuízo nos 2 canais','bad')}
+      <span class="pillbar-label">Conceito GPS:</span>
+      ${pillBtn('gpsAll','Todos', !f.gps)}
+      ${pillBtn('gpsOk','Dentro do GPS', f.gps==='ok','ok')}
+      ${pillBtn('gpsOver','Ultrapassou GPS', f.gps==='over','bad')}
+      ${pillBtn('gpsMissing','Sem base GPS', f.gps==='missing','warn')}
+    </div>
+    <div class="table-wrap"><table><thead><tr>${currentStockCols().map(c=>`<th data-col="${c.key}">${c.label}${sortArrow('estoque',c.key)}</th>`).join('')}</tr></thead>
+    <tbody id="estBody"></tbody></table></div>
+  `;
+  body.querySelector('#estQ').addEventListener('input', renderEstBody);
+  body.querySelector('#estPatio').addEventListener('change', e=>{ filterState.estoque.patio = e.target.value; renderEstBody(); });
+  body.querySelector('#estSortCol').addEventListener('change', e=>{ sortState.estoque.col = e.target.value||null; renderDashboard(); });
+  body.querySelector('#estSortDir').addEventListener('click', ()=>{ sortState.estoque.dir *= -1; renderDashboard(); });
+  body.querySelector('#estViewMode').addEventListener('click', ()=>{ estoqueDetailed = !estoqueDetailed; renderDashboard(); });
+  body.querySelector('#estClear').addEventListener('click', ()=>{
+    filterState.estoque = { patio:'', situacao:'', statusD0:'', statusJuros:'', gps:'' };
+    sortState.estoque = { col:null, dir:1 };
+    renderDashboard();
+  });
+  body.querySelectorAll('#estPillbar button[data-set]').forEach(btn=>btn.addEventListener('click',()=>{
+    applyEstPill(btn.dataset.set);
+    renderDashboard();
+  }));
+  body.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
+    const col = th.dataset.col;
+    if(col==='_detail') return;
+    sortState.estoque.dir = (sortState.estoque.col===col) ? -sortState.estoque.dir : 1;
+    sortState.estoque.col = col;
+    renderDashboard();
+  }));
+  renderEstBody();
+}
+function pillBtn(id,label,active,tone){
+  return `<button class="pill-btn ${active?'active':''} ${tone||''}" data-set="${id}">${label}</button>`;
+}
+function applyEstPill(id){
+  const f = filterState.estoque;
+  const map = {
+    sitAll:()=>f.situacao='', sitDisp:()=>f.situacao='disp', sitIndisp:()=>f.situacao='indisp',
+    d0All:()=>f.statusD0='', d0Ok:()=>f.statusD0='OK - cobre meta', d0Bad:()=>f.statusD0='Abaixo da meta',
+    d0Fill:()=>f.statusD0='__missing',
+    jrAll:()=>f.statusJuros='', jrOk:()=>f.statusJuros='Margem positiva',
+    jrLoss:()=>f.statusJuros='__loss', jrShow:()=>f.statusJuros='__lossShow', jrRep:()=>f.statusJuros='__lossRep', jr2:()=>f.statusJuros='Prejuízo nos 2 canais',
+    gpsAll:()=>f.gps='', gpsOk:()=>f.gps='ok', gpsOver:()=>f.gps='over', gpsMissing:()=>f.gps='missing',
+  };
+  if(map[id]) map[id]();
+}
+function sortArrow(tab,col){
+  const s = sortState[tab];
+  if(s.col!==col) return '';
+  return `<span class="arrow">${s.dir>0?'▲':'▼'}</span>`;
+}
+
+function ensureVehicleDetailShell(){
+  let shell = $('vehicleDetail');
+  if(shell) return shell;
+  shell = document.createElement('div');
+  shell.id = 'vehicleDetail';
+  shell.className = 'vehicle-detail-backdrop';
+  shell.hidden = true;
+  shell.innerHTML = `
+    <aside class="vehicle-detail-panel" role="dialog" aria-modal="true" aria-labelledby="vehicleDetailTitle">
+      <div class="vehicle-detail-head">
+        <div>
+          <div class="vehicle-detail-title" id="vehicleDetailTitle"></div>
+          <div class="vehicle-detail-sub" id="vehicleDetailSub"></div>
+    
+    </div>
+        <button type="button" class="detail-close" id="vehicleDetailClose" title="Fechar">×</button>
+  
+    </div>
+      <div class="vehicle-detail-body" id="vehicleDetailBody"></div>
+    </aside>`;
+  document.body.appendChild(shell);
+  $('vehicleDetailClose').addEventListener('click', closeVehicleDetail);
+  shell.addEventListener('click', e=>{ if(e.target===shell) closeVehicleDetail(); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeVehicleDetail(); });
+  return shell;
+}
+function closeVehicleDetail(){
+  const shell = $('vehicleDetail');
+  if(shell) shell.hidden = true;
+}
+function valueTone(v){
+  if(v==null || !isFinite(v)) return '';
+  return v < 0 ? 'neg' : v > 0 ? 'pos' : '';
+}
+function detailKpi(label, value, tone){
+  return `<div class="detail-kpi"><div class="label">${escapeHtml(label)}</div><div class="value ${tone||''}">${escapeHtml(value)}</div></div>`;
+}
+function infoRows(rows){
+  return `<div class="detail-info">${rows.map(([k,v])=>`<div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div>`).join('')}</div>`;
+}
+function marketBars(items){
+  const valid = items.filter(x=>x.value!=null && isFinite(x.value) && x.value>0);
+  if(!valid.length) return `<div class="detail-empty">Sem valores preenchidos para montar o gráfico.</div>`;
+  const max = Math.max(...valid.map(x=>x.value), 1);
+  return `<div class="bar-list">${items.map(x=>{
+    const has = x.value!=null && isFinite(x.value) && x.value>0;
+    const width = has ? Math.max(4, Math.round((x.value/max)*100)) : 0;
+    return `<div class="bar-row">
+      <div class="bar-label" title="${escapeHtml(x.label)}">${escapeHtml(x.label)}</div>
+      <div class="bar-track"><div class="bar-fill ${x.tone||''}" style="width:${width}%"></div></div>
+      <div class="bar-value">${has ? brR(x.value) : '-'}</div>
+
+    </div>`;
+  }).join('')}</div>`;
+}
+function marginBars(items){
+  const valid = items.filter(x=>x.value!=null && isFinite(x.value));
+  if(!valid.length) return `<div class="detail-empty">Sem margem calculada para este veículo. Preencha preço, custo e dados de mercado.</div>`;
+  const maxAbs = Math.max(...valid.map(x=>Math.abs(x.value)), PARAMS.metaShow, PARAMS.metaRep, .01);
+  return `<div class="bar-list">${items.map(x=>{
+    const has = x.value!=null && isFinite(x.value);
+    const tone = !has ? '' : x.value < 0 ? 'red' : (x.value >= x.meta ? 'green' : 'amber');
+    const width = has ? Math.max(4, Math.min(100, Math.round((Math.abs(x.value)/maxAbs)*100))) : 0;
+    return `<div class="bar-row">
+      <div class="bar-label" title="${escapeHtml(x.label)}">${escapeHtml(x.label)}</div>
+      <div class="bar-track"><div class="bar-fill ${tone}" style="width:${width}%"></div></div>
+      <div class="bar-value">${brPct(x.value)}</div>
+
+    </div>`;
+  }).join('')}</div>`;
+}
+function validMoney(v){
+  return v!=null && isFinite(v) && v>0;
+}
+function avgMoney(values){
+  const valid = values.filter(validMoney);
+  return valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : null;
+}
+function refCompraAAV(v){
+  return validMoney(v.refAAV) ? v.refAAV : null;
+}
+function refsShowroom(v){
+  return [v.precoVenda, v.aavB2C, v.fipe, v.refWeb, v.valorApp];
+}
+function refsRepasseVenda(v){
+  return [v.smRepasse, v.aavRepasse, v.valorTopDealer];
+}
+function refsShowroomEval(e){
+  return [e.fipe, e.aavB2C, e.refWeb, e.valorApp];
+}
+function refsRepasseEval(e){
+  return [e.aavRepasse, e.valorTopDealer];
+}
+function pctDiff(base, ref){
+  return ref!=null && isFinite(ref) && ref>0 && base!=null && isFinite(base) ? (base-ref)/ref : null;
+}
+function auditTone(pct, goodWhenNegative){
+  if(pct==null || !isFinite(pct)) return 'warn';
+  if(Math.abs(pct)<=0.03) return 'pos';
+  return goodWhenNegative ? (pct<0?'pos':'neg') : (pct<0?'warn':'neg');
+}
+function auditStatusCompra(pct){
+  if(pct==null) return 'Sem referência';
+  if(pct <= -0.03) return 'Compra eficiente';
+  if(pct <= 0.03) return 'Compra alinhada';
+  return 'Compra cara';
+}
+function auditStatusVenda(pct){
+  if(pct==null) return 'Sem B2C';
+  if(Math.abs(pct)<=0.03) return 'Venda alinhada';
+  return pct > 0 ? 'Acima do B2C' : 'Abaixo do B2C';
+}
+function auditGps(v, c){
+  const compraRef = refCompraAAV(v);
+  const compraVar = pctDiff(v.custo, compraRef);
+  const vendaVar = pctDiff(v.precoVenda, v.aavB2C);
+  const b2cFipeVar = pctDiff(v.aavB2C, v.fipe);
+  const compraStatus = auditStatusCompra(compraVar);
+  const vendaStatus = auditStatusVenda(vendaVar);
+  const gpsStatus = compraVar==null || vendaVar==null ? 'missing' : (compraVar>0.03 || Math.abs(vendaVar)>0.03 ? 'over' : 'ok');
+  const desvio = compraVar!=null && compraVar>0.03
+    ? `o valor pago ficou ${brPct(compraVar)} acima da AAV Compra.`
+    : compraVar!=null && compraVar<-0.03
+      ? `o valor pago ficou ${brPct(Math.abs(compraVar))} abaixo da AAV Compra.`
+      : compraVar!=null ? 'a compra ficou alinhada à AAV Compra.' : 'não há AAV Compra para auditar o valor pago.';
+  const recalculo = vendaVar!=null && Math.abs(vendaVar)>0.03
+    ? `o B2C indicava venda projetada ${vendaVar>0?'acima':'abaixo'} do mercado em ${brPct(Math.abs(vendaVar))}.`
+    : vendaVar!=null ? 'o preço projetado estava aderente ao B2C.' : 'não há B2C para validar a expectativa de venda.';
+  const veredito = c.statusJuros==='Margem positiva' ? 'negócio saudável após considerar o juro acumulado.'
+    : c.statusJuros.includes('Prejuízo') ? `${c.statusJuros.toLowerCase()} após efeito financeiro.`
+    : c.statusD0.toLowerCase()+'.';
+  return { compraVar, vendaVar, b2cFipeVar, compraStatus, vendaStatus, gpsStatus, desvio, recalculo, veredito };
+}
+function gpsConceptStatus(v, c){ return auditGps(v, c).gpsStatus; }
+function renderAuditSection(v, c, audit){
+  return `<section class="detail-section wide">
+    <h3>Auditoria GPS - compra e venda</h3>
+    ${infoRows([
+      ['Valor pago', brR(v.custo)], ['Valor avaliado AutoAvaliar', brR(v.refAvaliacao)], ['AAV Compra', brR(v.refAAV)], ['% Pago vs. AAV Compra', brPct(audit.compraVar)], ['Status da compra', audit.compraStatus],
+      ['Preço Venda Showroom', brR(v.precoVenda)], ['B2C AutoAvaliar', brR(v.aavB2C)], ['% Venda vs. B2C', brPct(audit.vendaVar)], ['Status da venda', audit.vendaStatus],
+      ['FIPE', brR(v.fipe)], ['% B2C vs. FIPE', brPct(audit.b2cFipeVar)]
+    ])}
+    <div class="detail-empty" style="margin-top:12px">
+      <b>Mapa das referencias:</b> AAV Compra audita o valor pago; AAV B2B Venda compoe Mercado Repasse; AAV B2C audita o preco de venda showroom. Valor avaliado AutoAvaliar e valor pago podem ser iguais, por isso nao sao usados como referencia entre si.
+    </div>
+    <div class="detail-empty" style="margin-top:12px">
+      <b>Desvio de rota:</b> ${escapeHtml(audit.desvio)}<br>
+      <b>Recálculo de rota:</b> ${escapeHtml(audit.recalculo)}<br>
+      <b>Veredito de margem:</b> ${escapeHtml(audit.veredito)}
+
+    </div>
+  </section>`;
+}
+function pointByAdd(points, add){
+  return (points||[]).find(pt=>pt.add===add) || null;
+}
+function compareTone(v){
+  if(v==null || !isFinite(v)) return '';
+  return v < 0 ? 'neg' : v > 0 ? 'pos' : '';
+}
+function renderComparisonSection(p, audit){
+  if(!p) return '';
+  const days = [0, 30, 60, 90];
+  const rows = days.map(add=>{
+    const sm = pointByAdd(p.pontos, add);
+    const aav = p.aav ? pointByAdd(p.aav.pontos, add) : null;
+    const diff = sm && aav ? sm.margemProjetada - aav.margemProjetada : null;
+    return `<tr>
+      <td>${projectionLabel(add)}</td>
+      <td class="${compareTone(sm?.margemProjetada)}">${brR(sm?.margemProjetada)}</td>
+      <td>${brR(sm?.jurosPeriodo)}</td>
+      <td class="${compareTone(aav?.margemProjetada)}">${brR(aav?.margemProjetada)}</td>
+      <td>${brR(aav?.jurosPeriodo)}</td>
+      <td class="${compareTone(diff)}">${brR(diff)}</td>
+    </tr>`;
+  }).join('');
+  return `<section class="detail-section wide">
+    <h3>Comparar Resultados SM x Auto Avaliar</h3>
+    ${infoRows([
+      ['Desvio Pago x AAV Compra', brPct(audit.compraVar)],
+      ['Desvio Venda Showroom x AAV B2C', brPct(audit.vendaVar)],
+      ['Custo juros SM', `${(PARAMS.juros*100).toLocaleString('pt-BR')}% a.m. sobre ${brR(p.casco)}`],
+      ['Custo juros AAV', p.aav ? `${(PARAMS.juros*100).toLocaleString('pt-BR')}% a.m. sobre ${brR(p.aav.casco)}` : 'Sem AAV Compra.']
+    ])}
+    <table class="compare-table">
+      <thead><tr><th>Período</th><th>Margem SM</th><th>Juros SM</th><th>Margem AAV</th><th>Juros AAV</th><th>Dif. margem SM-AAV</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </section>`;
+}
+function projectionCards(p){
+  if(!p) return `<div class="detail-empty">Para ativar a projeção Hoje, D+15, D+30, D+45, D+60 e D+90, preencha a Margem Atual Sistema deste veículo.</div>`;
+  const maxAbs = Math.max(...p.pontos.map(pt=>Math.abs(pt.margemProjetada)), 1);
+  return `<div class="projection-grid">${p.pontos.map(pt=>{
+    const tone = pt.margemProjetada < 0 ? 'red' : 'green';
+    const width = Math.max(4, Math.round((Math.abs(pt.margemProjetada)/maxAbs)*100));
+    return `<div class="projection-card">
+      <div class="day">${projectionLabel(pt.add)} • ${pt.diasProjetados} dias</div>
+      <div class="money ${pt.margemProjetada<0?'neg':'pos'}">${brR(pt.margemProjetada)}</div>
+      <div class="bar-track"><div class="bar-fill ${tone}" style="width:${width}%"></div></div>
+      <div class="meta">Juros: ${brR(pt.jurosPeriodo)}<br>Custo total: ${brR(pt.custoTotal)}</div>
+
+    </div>`;
+  }).join('')}</div>`;
+}
+function openVehicleDetail(idx){
+  const v = stockData[idx];
+  if(!v) return;
+  const c = computeStock(v);
+  const p = computeProjection(v);
+  const audit = auditGps(v, c);
+  const shell = ensureVehicleDetailShell();
+  $('vehicleDetailTitle').textContent = `${v.placa || '-'} • ${v.modelo || 'Veículo sem modelo'}`;
+  $('vehicleDetailSub').textContent = `${v.patio || 'Pátio não informado'} | ${v.anoMod || 'Ano não informado'} | ${v.dias || 0} dias em estoque`;
+  const statusJurosTone = c.statusJuros.includes('Prejuízo') ? 'neg' : c.statusJuros==='Margem positiva' ? 'pos' : 'warn';
+  const statusD0Tone = c.statusD0==='OK - cobre meta' ? 'pos' : c.statusD0==='Abaixo da meta' ? 'neg' : 'warn';
+  $('vehicleDetailBody').innerHTML = `
+    <div class="detail-kpis">
+      ${detailKpi('Custo aquisição', brR(v.custo), '')}
+      ${detailKpi('Pago vs. AAV Compra', brPct(audit.compraVar), auditTone(audit.compraVar, true))}
+      ${detailKpi('Venda vs. B2C', brPct(audit.vendaVar), auditTone(audit.vendaVar, false))}
+      ${detailKpi('Preço Venda Showroom', brR(v.precoVenda), '')}
+      ${detailKpi('Margem atual showroom', brR(c.margemAtualShow), valueTone(c.margemAtualShow))}
+      ${detailKpi('Status com juro', c.statusJuros, statusJurosTone)}
+      ${detailKpi('Margem D0 showroom', brPct(c.margemD0Show), c.margemD0Show!=null && c.margemD0Show>=PARAMS.metaShow ? 'pos' : 'warn')}
+      ${detailKpi('Margem D0 repasse', brPct(c.margemD0Rep), c.margemD0Rep!=null && c.margemD0Rep>=PARAMS.metaRep ? 'pos' : 'warn')}
+      ${detailKpi('Média showroom', brR(c.mediaShow), '')}
+      ${detailKpi('Status D0', c.statusD0, statusD0Tone)}
+
+    </div>
+    <div class="detail-grid">
+      <section class="detail-section">
+        <h3>Resumo do veículo</h3>
+        ${infoRows([
+          ['Placa', v.placa], ['Modelo', v.modelo], ['Ano/Modelo', v.anoMod], ['KM', (v.km||0).toLocaleString('pt-BR')],
+          ['Situação', v.situacao], ['Pátio', v.patio], ['Dias em estoque', v.dias], ['Reparo', brR(v.reparo)]
+        ])}
+      </section>
+      <section class="detail-section">
+        <h3>Margens e alertas</h3>
+        ${marginBars([
+          {label:'D0 Showroom', value:c.margemD0Show, meta:PARAMS.metaShow},
+          {label:'D0 Repasse', value:c.margemD0Rep, meta:PARAMS.metaRep},
+          {label:'Meta Showroom', value:PARAMS.metaShow, meta:PARAMS.metaShow},
+          {label:'Meta Repasse', value:PARAMS.metaRep, meta:PARAMS.metaRep}
+        ])}
+      </section>
+      <section class="detail-section">
+        <h3>Mercado Showroom</h3>
+        ${marketBars([
+          {label:'Preço Venda Showroom', value:v.precoVenda, tone:'green'},
+          {label:'AAV B2C', value:v.aavB2C},
+          {label:'FIPE', value:v.fipe},
+          {label:'Ref. Web', value:v.refWeb},
+          {label:'Valor APP', value:v.valorApp},
+          {label:'Média', value:c.mediaShow, tone:'amber'}
+        ])}
+      </section>
+      <section class="detail-section">
+        <h3>Mercado Repasse</h3>
+        ${marketBars([
+          {label:'SM Repasse', value:v.smRepasse, tone:'green'},
+          {label:'AAV B2B Venda', value:v.aavRepasse},
+          {label:'Top Dealer', value:v.valorTopDealer},
+          {label:'Média', value:c.mediaRep, tone:'amber'}
+        ])}
+      </section>
+      ${renderAuditSection(v, c, audit)}
+      <section class="detail-section wide">
+        <h3>Projeção financeira</h3>
+        ${p ? infoRows([
+          ['Casco', brR(p.casco)], ['Preço Venda Showroom', brR(p.preco)], ['Margem atual sistema', brR(p.margemAtual)],
+          ['Kit Rafael total NBS', brR(p.kitTotal)], ['Financeiro 1,7% deduzido', brR(p.financeiroProvisionado)], ['Kit Rafael operacional', brR(p.kitOperacional)],
+          ['Custo total hoje', brR(p.pontos[0]?.custoTotal)], ['Margem lucro hoje', brR(p.pontos[0]?.margemProjetada)], ['Margem líquida inicial', brR(p.margemLiquidaInicial)]
+        ]) : ''}
+        <div style="margin-top:12px">${projectionCards(p)}</div>
+        ${p && p.aav ? `<div style="margin-top:16px">${infoRows([
+          ['Cenário Auto Avaliar', 'AAV Ref. como custo e AAV B2C como venda'], ['Custo AAV Ref.', brR(p.aav.casco)], ['Venda AAV B2C', brR(p.aav.preco)],
+          ['Kit operacional aplicado', brR(p.aav.kitOperacional)], ['Margem AAV hoje', brR(p.aav.pontos[0]?.margemProjetada)]
+        ])}</div><div style="margin-top:12px">${projectionCards(p.aav)}</div>` : ''}
+      </section>
+
+    </div>`;
+  shell.hidden = false;
+}
+
+function renderEstBody(){
+  const rows = estoqueFiltered();
+  const tbody = $('estBody');
+  const cols = currentStockCols();
+  if(rows.length===0){ tbody.innerHTML = `<tr><td colspan="${cols.length}" style="padding:30px;color:var(--muted)">Nenhum veículo encontrado com esse filtro.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(({v,c})=>{
+    const idx = stockData.indexOf(v);
+    return `<tr class="vehicle-row" data-idx="${idx}" title="Clique para abrir detalhes e gráficos do veículo">${cols.map(col=>renderCell(col, v, c, idx)).join('')}</tr>`;
+  }).join('');
+  tbody.querySelectorAll('input[data-field]').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      const idx = +inp.dataset.idx, field = inp.dataset.field;
+      const val = toNum(inp.value);
+      stockData[idx][field] = val;
+      renderDashboard();
+    });
+  });
+  tbody.querySelectorAll('button[data-detail-idx]').forEach(btn=>{
+    btn.addEventListener('click', e=>{ e.stopPropagation(); openVehicleDetail(+btn.dataset.detailIdx); });
+  });
+  tbody.querySelectorAll('tr.vehicle-row').forEach(row=>{
+    row.addEventListener('click', e=>{
+      if(e.target.closest('input,button,select,a,label')) return;
+      openVehicleDetail(+row.dataset.idx);
+    });
+  });
+}
+
+function renderCell(col, v, c, idx){
+  if(col.key==='_detail') return `<td><button type="button" class="btn btn-sm" data-detail-idx="${idx}">Visão detalhada</button></td>`;
+  if(col.edit){
+    const val = v[col.key];
+    const displayVal = val!=null ? (col.money ? brR(val) : Math.round(val)) : '';
+    return `<td class="editable"><input data-idx="${idx}" data-field="${col.key}" type="text" inputmode="decimal" value="${escapeHtml(displayVal)}" placeholder="-"/></td>`;
+  }
+  if(col.key==='situacao'){
+    const bad = norm(v.situacao).includes('indispon');
+    return `<td><span class="pill ${bad?'warn':'ok'}">${escapeHtml(v.situacao)}</span></td>`;
+  }
+  if(col.key==='modelo') return `<td class="col-modelo" title="${escapeHtml(v.modelo)}">${escapeHtml(v.modelo)}</td>`;
+  if(!col.calc){
+    let val = v[col.key];
+    if(col.money) val = brR(val);
+    return `<td class="${col.key==='patio'?'txt-left':''}">${escapeHtml(val)}</td>`;
+  }
+  // calculated columns
+  const mapVal = {
+    _mediaShow:c.mediaShow, _mediaRep:c.mediaRep, _margemD0Show:c.margemD0Show, _margemD0Rep:c.margemD0Rep,
+    _margemAtualShow:c.margemAtualShow, _margemAtualRep:c.margemAtualRep,
+    _statusD0:c.statusD0, _statusJuros:c.statusJuros,
+    _dtIdealShow:c.dtIdealShow, _dtZeroShow:c.dtZeroShow, _dtIdealRep:c.dtIdealRep, _dtZeroRep:c.dtZeroRep
+  };
+  const val = mapVal[col.key];
+  if(col.pill) return `<td><span class="pill ${pillClass(val)}">${escapeHtml(val)}</span></td>`;
+  if(col.date) return `<td class="calc">${val?brDate(val):'-'}</td>`;
+  if(col.pct) return `<td class="calc ${val!=null&&val<PARAMS.metaShow?'neg':'pos'}">${brPct(val)}</td>`;
+  if(col.money){
+    const cls = col.signed && val!=null ? (val<0?'neg':'pos') : '';
+    return `<td class="calc ${cls}">${brR(val)}</td>`;
+  }
+  return `<td class="calc">${val==null?'-':val}</td>`;
+}
+
+
+/* ---------------- Projeção financeira tab ---------------- */
+function renderProjecaoTab(){
+  const body = $('tabBody');
+  const rows = stockData.map(v=>({v, p:computeProjection(v)}));
+  body.innerHTML = `
+    <div class="toolbar">
+      <input type="text" id="projQ" placeholder="Buscar placa ou modelo..."/>
+      <div class="legend-inline">
+        <span class="sw"><span class="dot" style="background:var(--gold)"></span>Margem Atual Sistema é obrigatória</span>
+        <span class="sw"><span class="dot" style="background:var(--cyan)"></span>Juros futuro: casco * dias projetados / 30 * ${(PARAMS.juros*100).toLocaleString('pt-BR')}%</span>
+  
+    </div>
+      <div class="spacer"></div>
+      <button class="btn btn-sm" id="projOnlyMissing">Mostrar pendentes</button>
+
+    </div>
+    <div class="param-note" style="margin-bottom:14px">
+      Kit Rafael operacional = Kit Rafael total NBS - financeiro provisionado de ${(PARAMS.jurosOrig*100).toLocaleString('pt-BR')}% sobre o casco. Depois o painel recalcula o juro real de ${(PARAMS.juros*100).toLocaleString('pt-BR')}% a.m. pro rata pelos dias em estoque.
+
+    </div>
+    <div class="table-wrap"><table><thead><tr>
+      <th>Placa</th><th>Modelo</th><th>Dias atuais</th><th>Casco</th><th>Preço Venda Showroom</th><th>Margem Atual Sistema</th>
+      <th>Kit Rafael Total NBS</th><th>Financeiro 1,7% Deduzido</th><th>Kit Rafael Operacional</th><th>Margem Líquida Inicial</th>
+      ${PROJECTION_DAYS.map(d=>`<th>${projectionLabel(d)} Margem</th><th>${projectionLabel(d)} Juros</th>`).join('')}
+      <th>Status</th>
+    </tr></thead><tbody id="projBody"></tbody></table></div>
+  `;
+  let onlyMissing = false;
+  const renderBody = ()=>{
+    const q = norm($('projQ')?.value || '');
+    let out = rows;
+    if(q) out = out.filter(r=>norm(r.v.placa).includes(q) || norm(r.v.modelo).includes(q));
+    if(onlyMissing) out = out.filter(r=>!r.p);
+    const tbody = $('projBody');
+    if(out.length===0){ tbody.innerHTML = `<tr><td colspan="${10 + (PROJECTION_DAYS.length*2) + 1}" style="padding:30px;color:var(--muted)">Nenhum veículo encontrado.</td></tr>`; return; }
+    tbody.innerHTML = out.map(({v,p})=>{
+      if(!p){
+        return `<tr>
+          <td>${escapeHtml(v.placa)}</td><td class="col-modelo" title="${escapeHtml(v.modelo)}">${escapeHtml(v.modelo)}</td><td>${v.dias}</td>
+          <td>${brR(v.custo)}</td><td>${brR(v.precoVenda)}</td><td class="editable"><input data-proj-idx="${stockData.indexOf(v)}" type="text" inputmode="decimal" placeholder="preencher"/></td>
+          <td colspan="${4 + PROJECTION_DAYS.length*2}">Preencha a Margem Atual Sistema na aba Estoque ou aqui para ativar a projeção.</td>
+          <td><span class="pill warn">Pendente</span></td>
+        </tr>`;
+      }
+      return `<tr>
+        <td>${escapeHtml(v.placa)}</td><td class="col-modelo" title="${escapeHtml(v.modelo)}">${escapeHtml(v.modelo)}</td><td>${v.dias}</td>
+        <td>${brR(p.casco)}</td><td>${brR(p.preco)}</td><td>${brR(p.margemAtual)}</td>
+        <td>${brR(p.kitTotal)}</td><td class="pos">${brR(p.financeiroProvisionado)}</td><td>${brR(p.kitOperacional)}</td><td class="${p.margemLiquidaInicial<0?'neg':'pos'}">${brR(p.margemLiquidaInicial)}</td>
+        ${p.pontos.map(pt=>`<td class="${pt.margemProjetada<0?'neg':'pos'}">${brR(pt.margemProjetada)}</td><td>${brR(pt.jurosPeriodo)}</td>`).join('')}
+        <td><span class="pill ${p.pontos[p.pontos.length-1].margemProjetada>=0?'ok':'bad'}">${p.pontos[p.pontos.length-1].margemProjetada>=0?'Positiva em D+90':'Negativa até D+90'}</span></td>
+      </tr>`;
+    }).join('');
+    tbody.querySelectorAll('input[data-proj-idx]').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        const idx = +inp.dataset.projIdx;
+        const val = toNum(inp.value);
+        stockData[idx].margemSistema = val;
+        renderDashboard();
+      });
+    });
+  };
+  $('projQ').addEventListener('input', renderBody);
+  $('projOnlyMissing').addEventListener('click', ()=>{ onlyMissing = !onlyMissing; renderBody(); });
+  renderBody();
+}
+/* ---------------- Avaliações tab ---------------- */
+const AV_HEADERS = ['Placa','Status','Data','Marca','Modelo','Versão','KM','Valor Avaliado','Reparo Previsto',
+  'FIPE','AAV B2C','Ref. Web','Valor APP','AAV B2B Venda','AAV Compra','Valor Top Dealer',
+  'Média Showroom','Média Repasse','Margem D0 Show %','Margem D0 Rep %','Recomendação'];
+const SORT_OPTIONS_AVAL = [
+  {key:'placa', label:'Placa'}, {key:'modelo', label:'Modelo'}, {key:'valorAvaliado', label:'Valor Avaliado'},
+  {key:'fipe', label:'FIPE'}, {key:'_mediaShow', label:'Média Showroom'}, {key:'_mediaRep', label:'Média Repasse'},
+  {key:'_margemShow', label:'Margem D0 Showroom %'}, {key:'_margemRep', label:'Margem D0 Repasse %'},
+];
+
+function renderAvaliacoesTab(){
+  const body = $('tabBody');
+  if(evalData.length===0){
+    body.innerHTML = `<div class="empty-state"><b>Nenhum relatório de avaliação carregado</b>Envie o arquivo do Auto Avaliar para ver as avaliações em andamento aqui.</div>`;
+    return;
+  }
+  const s = sortState.avaliacoes;
+  const f = filterState.avaliacoes;
+  body.innerHTML = `
+    <div class="toolbar">
+      <input type="text" id="avQ" placeholder="Buscar placa, marca ou modelo..."/>
+      <div class="sort-ctrl">
+        <label>Ordenar por</label>
+        <select id="avSortCol">
+          <option value="">-</option>
+          ${SORT_OPTIONS_AVAL.map(o=>`<option value="${o.key}" ${s.col===o.key?'selected':''}>${o.label}</option>`).join('')}
+        </select>
+        <button class="btn btn-sm" id="avSortDir">${s.dir>0?'↑ Crescente':'↓ Decrescente'}</button>
+  
+    </div>
+      <div class="spacer"></div>
+      <button class="btn btn-sm" id="avClear">Limpar filtros</button>
+
+    </div>
+    <div class="pillbar">
+      <span class="pillbar-label">Recomendação:</span>
+      ${pillBtn('rcAll','Todas', !f.reco)}
+      ${pillBtn('rcBuy','Comprar - cobre meta', f.reco==='Comprar - cobre meta','ok')}
+      ${pillBtn('rcNeg','Negociar / revisar valor', f.reco==='Negociar / revisar valor','bad')}
+      ${pillBtn('rcMiss','Sem dados de mercado', f.reco==='Sem dados de mercado','warn')}
+
+    </div>
+    <div class="table-wrap"><table><thead><tr>${AV_HEADERS.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody id="avBody"></tbody></table></div>
+  `;
+  $('avQ').addEventListener('input', renderAvBody);
+  $('avSortCol').addEventListener('change', e=>{ sortState.avaliacoes.col = e.target.value||null; renderDashboard(); });
+  $('avSortDir').addEventListener('click', ()=>{ sortState.avaliacoes.dir *= -1; renderDashboard(); });
+  $('avClear').addEventListener('click', ()=>{
+    filterState.avaliacoes = { reco:'' }; sortState.avaliacoes = { col:null, dir:1 }; renderDashboard();
+  });
+  body.querySelectorAll('.pillbar button[data-set]').forEach(btn=>btn.addEventListener('click',()=>{
+    const map = { rcAll:'', rcBuy:'Comprar - cobre meta', rcNeg:'Negociar / revisar valor', rcMiss:'Sem dados de mercado' };
+    filterState.avaliacoes.reco = map[btn.dataset.set];
+    renderDashboard();
+  }));
+  renderAvBody();
+}
+function renderAvBody(){
+  const q = norm($('avQ')?.value||'');
+  const f = filterState.avaliacoes;
+  let rows = evalData.map(e=>({e, c:computeEval(e)}));
+  if(q) rows = rows.filter(r=> norm(r.e.placa).includes(q) || norm(r.e.marca).includes(q) || norm(r.e.modelo).includes(q));
+  if(f.reco) rows = rows.filter(r=>r.c.reco===f.reco);
+  const s = sortState.avaliacoes;
+  if(s.col){
+    const val = r=>({placa:r.e.placa, modelo:r.e.modelo, valorAvaliado:r.e.valorAvaliado, fipe:r.e.fipe,
+      _mediaShow:r.c.mediaShow, _mediaRep:r.c.mediaRep, _margemShow:r.c.margemShow, _margemRep:r.c.margemRep}[s.col]);
+    rows.sort((a,b)=>{
+      const va=val(a), vb=val(b);
+      if(va==null && vb==null) return 0; if(va==null) return 1; if(vb==null) return -1;
+      if(va<vb) return -1*s.dir; if(va>vb) return 1*s.dir; return 0;
+    });
+  }
+  const tbody = $('avBody');
+  if(rows.length===0){ tbody.innerHTML = `<tr><td colspan="${AV_HEADERS.length}" style="padding:30px;color:var(--muted)">Nenhuma avaliação encontrada.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(({e,c})=>{
+    return `<tr>
+      <td>${escapeHtml(e.placa)}</td><td>${escapeHtml(e.status)}</td><td>${escapeHtml(e.data)}</td>
+      <td class="txt-left">${escapeHtml(e.marca)}</td><td class="txt-left">${escapeHtml(e.modelo)}</td>
+      <td class="col-modelo txt-left" title="${escapeHtml(e.versao)}">${escapeHtml(e.versao)}</td>
+      <td>${e.km.toLocaleString('pt-BR')}</td>
+      <td>${brR(e.valorAvaliado)}</td><td>${brR(e.gastoPrevisto)}</td>
+      <td>${brR(e.fipe)}</td><td>${brR(e.aavB2C)}</td><td>${brR(e.refWeb)}</td><td>${brR(e.valorApp)}</td>
+      <td>${brR(e.aavRepasse)}</td><td>${brR(e.refAAV)}</td><td>${brR(e.valorTopDealer)}</td>
+      <td class="calc">${brR(c.mediaShow)}</td><td class="calc">${brR(c.mediaRep)}</td>
+      <td class="calc ${c.margemShow!=null&&c.margemShow<PARAMS.metaShow?'neg':'pos'}">${brPct(c.margemShow)}</td>
+      <td class="calc ${c.margemRep!=null&&c.margemRep<PARAMS.metaRep?'neg':'pos'}">${brPct(c.margemRep)}</td>
+      <td><span class="pill ${pillClass(c.reco)}">${escapeHtml(c.reco)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------------- Parâmetros tab ---------------- */
+function renderParametrosTab(){
+  const body = $('tabBody');
+  const fields = [
+    ['kitPct','Kit Rafael %','Custo operacional fixo cobrado uma única vez, sobre o valor de aquisição.'],
+    ['jurosOrig','Juros antigo embutido %','Arbitragem financeira antiga de 1,7% usada para purificar o Kit Rafael.'],
+    ['juros','Taxa de juro mensal %','Custo financeiro real do capital investido no veículo, por mês.'],
+    ['showShare','Participação do Kit - Showroom','Fatia do Kit Rafael que corre por dia no canal Showroom.'],
+    ['repShare','Participação do Kit - Repasse','Fatia do Kit Rafael que corre por dia no canal Repasse.'],
+    ['metaShow','Margem ideal - Showroom','Meta mínima de margem para considerar "OK" no canal Showroom.'],
+    ['metaRep','Margem ideal - Repasse','Meta mínima de margem para considerar "OK" no canal Repasse.'],
+  ];
+  body.innerHTML = `<div class="params-grid">${fields.map(([key,label,note])=>`
+    <div class="param-card">
+      <label>${label}</label>
+      <div class="prow"><input type="text" data-param="${key}" value="${(PARAMS[key]*100).toLocaleString('pt-BR',{maximumFractionDigits:2})}"/><span class="unit">%</span></div>
+      <div class="param-note">${note}</div>
+
+    </div>`).join('')}</div>
+    <div class="param-note" style="margin-top:16px">Estes são os mesmos parâmetros usados no painel individual GPS (index2.html). Alterar aqui recalcula todo o estoque e as avaliações em andamento.</div>
+  `;
+  body.querySelectorAll('input[data-param]').forEach(inp=>{
+    inp.addEventListener('change', ()=>{
+      const key = inp.dataset.param;
+      const n = toNum(inp.value);
+      if(n!=null) PARAMS[key] = n/100;
+      renderDashboard();
+    });
+  });
+}
+
+/* ---------------- Export to organized Excel ---------------- */
+function exportExcel(){
+  const wb = XLSX.utils.book_new();
+
+  const stockHeaders = ['Placa','Pátio','Modelo','Ano/Mod','KM','Situação','Dias em Estoque','Custo Aquisição',
+    'Reparo Previsto','FIPE','AAV B2C','Ref. Web','Valor APP','Preço Venda Showroom','Margem Atual Sistema','Média Showroom',
+    'AAV B2B Venda','AAV Compra','Valor Top Dealer','SM Repasse','Média Repasse',
+    'Margem D0 Showroom %','Margem D0 Repasse %','Margem Atual Showroom','Margem Atual Repasse',
+    'Status Margem D0','Status Margem c/ Juro','Limite Margem Ideal (Show)','Data Zera (Show)','Limite Margem Ideal (Rep)','Data Zera (Rep)'];
+  const stockRows = stockData.map(v=>{
+    const c = computeStock(v);
+    return [v.placa, v.patio, v.modelo, v.anoMod, v.km, v.situacao, v.dias, v.custo,
+      v.reparo, v.fipe, v.aavB2C, v.refWeb, v.valorApp, v.precoVenda, v.margemSistema, c.mediaShow,
+      v.aavRepasse, v.refAAV, v.valorTopDealer, v.smRepasse, c.mediaRep,
+      c.margemD0Show, c.margemD0Rep, c.margemAtualShow, c.margemAtualRep,
+      c.statusD0, c.statusJuros, c.dtIdealShow||null, c.dtZeroShow||null, c.dtIdealRep||null, c.dtZeroRep||null];
+  });
+  const wsStock = XLSX.utils.aoa_to_sheet([stockHeaders, ...stockRows]);
+  applyColumnFormats(wsStock, stockRows.length, {
+    money:[7,8,9,10,11,12,13,14,15,16,17,18,19,20,23,24], pct:[21,22], date:[27,28,29,30]
+  });
+  wsStock['!cols'] = stockHeaders.map((h,i)=>({wch: i===2?30:14}));
+  wsStock['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:stockRows.length,c:stockHeaders.length-1}})};
+  XLSX.utils.book_append_sheet(wb, wsStock, 'Painel Estoque');
+
+  if(evalData.length){
+    const evHeaders = ['Placa','Status Avaliação','Data Avaliação','Marca','Modelo','Versão','KM','Valor Avaliado',
+      'Gasto Previsto','FIPE','AAV B2C','Ref. Web','Valor APP','AAV B2B Venda','AAV Compra','Valor Top Dealer',
+      'Média Showroom','Média Repasse','Margem D0 Showroom %','Margem D0 Repasse %','Recomendação'];
+    const evRows = evalData.map(e=>{
+      const c = computeEval(e);
+      return [e.placa, e.status, e.data, e.marca, e.modelo, e.versao, e.km, e.valorAvaliado, e.gastoPrevisto,
+        e.fipe, e.aavB2C, e.refWeb, e.valorApp, e.aavRepasse, e.refAAV, e.valorTopDealer,
+        c.mediaShow, c.mediaRep, c.margemShow, c.margemRep, c.reco];
+    });
+    const wsEv = XLSX.utils.aoa_to_sheet([evHeaders, ...evRows]);
+    applyColumnFormats(wsEv, evRows.length, {money:[7,8,9,10,11,12,13,14,15,16,17], pct:[18,19]});
+    wsEv['!cols'] = evHeaders.map((h,i)=>({wch: i===5?30:14}));
+    wsEv['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:evRows.length,c:evHeaders.length-1}})};
+    XLSX.utils.book_append_sheet(wb, wsEv, 'Avaliações em Andamento');
+  }
+
+  const projHeaders = ['Placa','Modelo','Dias atuais','Casco','Preço Venda Showroom','Margem Atual Sistema','Kit Rafael Total NBS','Financeiro 1,7% Deduzido','Kit Rafael Operacional','Margem Líquida Inicial'];
+  PROJECTION_DAYS.forEach(d=>{ const lbl = projectionLabel(d); projHeaders.push(`${lbl} Dias Projetados`, `${lbl} Juros`, `${lbl} Custo Total`, `${lbl} Margem Projetada`); });
+  projHeaders.push('Status');
+  const projRows = stockData.map(v=>{
+    const p = computeProjection(v);
+    if(!p) return [v.placa, v.modelo, v.dias, v.custo, v.precoVenda, v.margemSistema, null, null, null, null, ...PROJECTION_DAYS.flatMap(()=>[null,null,null,null]), 'Pendente: preencher Margem Atual Sistema'];
+    const row = [v.placa, v.modelo, v.dias, p.casco, p.preco, p.margemAtual, p.kitTotal, p.financeiroProvisionado, p.kitOperacional, p.margemLiquidaInicial];
+    p.pontos.forEach(pt=>row.push(pt.diasProjetados, pt.jurosPeriodo, pt.custoTotal, pt.margemProjetada));
+    row.push(p.pontos[p.pontos.length-1].margemProjetada>=0 ? 'Positiva em D+90' : 'Negativa até D+90');
+    return row;
+  });
+  const wsProj = XLSX.utils.aoa_to_sheet([projHeaders, ...projRows]);
+  const moneyProj = [3,4,5,6,7,8,9];
+  PROJECTION_DAYS.forEach((_,i)=>{ const base = 10 + i*4; moneyProj.push(base+1, base+2, base+3); });
+  applyColumnFormats(wsProj, projRows.length, {money:moneyProj});
+  wsProj['!cols'] = projHeaders.map((h,i)=>({wch: i===1?30:16}));
+  wsProj['!autofilter'] = {ref: XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:projRows.length,c:projHeaders.length-1}})};
+  XLSX.utils.book_append_sheet(wb, wsProj, 'Projecao Financeira');
+  const paramRows = [
+    ['Parâmetro','Valor'],
+    ['Kit Rafael % (custo operacional fixo)', PARAMS.kitPct],
+    ['Juro antigo embutido na margem do sistema', PARAMS.jurosOrig],
+    ['Taxa de juro mensal (a.m.)', PARAMS.juros],
+    ['Participação do Kit - Showroom', PARAMS.showShare],
+    ['Participação do Kit - Repasse', PARAMS.repShare],
+    ['Margem ideal mínima - Showroom', PARAMS.metaShow],
+    ['Margem ideal mínima - Repasse', PARAMS.metaRep],
+    ['Data de geração', new Date()],
+  ];
+  const wsP = XLSX.utils.aoa_to_sheet(paramRows);
+  applyColumnFormats(wsP, paramRows.length-1, {pct:[1]});
+  wsP['B9'].t = 'd'; wsP['B9'].z = 'dd/mm/yyyy hh:mm';
+  wsP['!cols'] = [{wch:42},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, wsP, 'Parâmetros');
+
+  const legendRows = [
+    ['Como usar este arquivo'],
+    ['Cores/campos', 'No painel HTML, campos editáveis aparecem em dourado. Nesta exportação eles ficam nas colunas correspondentes - edite livremente, os valores aqui são um retrato do momento em que você exportou.'],
+    ['FIPE / AAV não preenchidos', 'Só foram preenchidos automaticamente quando a placa do estoque coincidiu com uma avaliação do relatório Auto Avaliar. Para os demais, preencha manualmente para ativar o cálculo de margem daquele veículo.'],
+    ['Dias em Estoque', 'Vem da coluna "Dpt" do relatório NBS (dias em pátio) e alimenta o desgaste de margem por juro.'],
+    ['Status Margem D0', '"OK - cobre meta" atinge a meta interna hoje; "Abaixo da meta" não atinge; "Preencher..." faltam dados mínimos.'],
+    ['Status c/ Juro', 'Considera o custo financeiro acumulado pelos dias em estoque.'],
+    ['Datas limite', 'Projeção de quando a margem ideal deixa de ser atingida / quando a margem zera, em cada canal.'],
+    ['Fonte', 'Gerado pelo Painel GPS de Estoque (HTML), a partir de: ' + (stockFileName||'estoque') + (evalFileName? ' + '+evalFileName : '')],
+  ];
+  const wsL = XLSX.utils.aoa_to_sheet(legendRows);
+  wsL['!cols'] = [{wch:26},{wch:110}];
+  XLSX.utils.book_append_sheet(wb, wsL, 'Legenda');
+
+  const stamp = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `Painel_GPS_Estoque_${stamp}.xlsx`);
+}
+function applyColumnFormats(ws, rowCount, {money=[], pct=[], date=[]}){
+  for(let r=1;r<=rowCount;r++){
+    money.forEach(c=>{ const ref = XLSX.utils.encode_cell({r,c}); if(ws[ref]) ws[ref].z = 'R$ #,##0;[RED]-R$ #,##0;"-"'; });
+    pct.forEach(c=>{ const ref = XLSX.utils.encode_cell({r,c}); if(ws[ref]) ws[ref].z = '0.0%'; });
+    date.forEach(c=>{ const ref = XLSX.utils.encode_cell({r,c}); if(ws[ref] && ws[ref].v instanceof Date){ ws[ref].t='d'; ws[ref].z='dd/mm/yyyy'; } });
+  }
+}
+
+/* ---------------- wire up uploads / drag&drop / reset ---------------- */
+function wireDropzone(which){
+  const dz = $(which==='stock'?'dzStock':'dzEval');
+  const input = $(which==='stock'?'fileStock':'fileEval');
+  input.addEventListener('change', ()=>handleFile(which, input.files[0]));
+  dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', ()=> dz.classList.remove('drag'));
+  dz.addEventListener('drop', e=>{
+    e.preventDefault(); dz.classList.remove('drag');
+    if(e.dataTransfer.files[0]) handleFile(which, e.dataTransfer.files[0]);
+  });
+}
+wireDropzone('stock');
+wireDropzone('eval');
+
+$('btnExport').addEventListener('click', exportExcel);
+$('btnReset').addEventListener('click', ()=>{
+  stockData = []; evalData = []; stockFileName=''; evalFileName='';
+  $('fileStock').value=''; $('fileEval').value='';
+  $('dzStock').classList.remove('ok'); $('dzEval').classList.remove('ok');
+  setDzStatus('stock',[{txt:'Nenhum arquivo carregado'}]);
+  setDzStatus('eval',[{txt:'Nenhum arquivo carregado'}]);
+  setRadar('stock',''); setRadar('eval','');
+  $('dashboard').hidden = true; $('dashboard').innerHTML='';
+  $('btnExport').disabled = true;
+  $('emptyState').style.display='block';
+});
+
+$('emptyState').style.display='block';
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
