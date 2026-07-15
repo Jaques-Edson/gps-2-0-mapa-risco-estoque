@@ -966,7 +966,7 @@ function renderStats(){
   const focusHint = prejuizo > 0 ? 'Clique nos cards de prejuízo para ver o canal: Venda Showroom, Repasse ou ambos.'
     : abaixo > 0 ? 'Clique em Abaixo da meta para revisar preço e margem.'
     : 'Acompanhe diariamente para manter o estoque saudável.';
-  const desvioAvaliacaoAuto = avgDeviation(stockData, v=>v.custo, v=>v.refAvaliacao);
+  const desvioAvaliacaoAuto = avgDeviation(stockData, v=>v.refAvaliacao, v=>v.refAAV);
   const desvioVendaB2C = avgDeviation(stockData, v=>v.precoVenda, v=>v.aavB2C);
   const cards = [
     {label:'Veículos no estoque', num:total, pct:100, cls:'', action:'all', hint:'Ver todos os carros'},
@@ -1001,7 +1001,7 @@ function renderStats(){
       </button>
     </div>
     <div class="deviation-panel">
-      ${renderDeviationCard('Avaliacao vs. AutoAvaliar', desvioAvaliacaoAuto, 'Na media, a avaliacao ficou acima da referencia AutoAvaliar.', 'Na media, a avaliacao ficou abaixo da referencia AutoAvaliar.')}
+      ${renderDeviationCard('Avaliacao vs. Ref. AAV', desvioAvaliacaoAuto, 'Na media, a avaliacao ficou acima da referencia AAV.', 'Na media, a avaliacao ficou abaixo da referencia AAV.')}
       ${renderDeviationCard('Preco de Venda vs. B2C', desvioVendaB2C, 'Na media, a projecao de venda ficou acima do B2C.', 'Na media, a projecao de venda ficou abaixo do B2C.')}
     </div>
     ${cards.map(card=>`
@@ -1326,7 +1326,7 @@ function renderAuditSection(v, c, audit){
   return `<section class="detail-section wide">
     <h3>Auditoria GPS - compra e venda</h3>
     ${infoRows([
-      ['Valor pago', brR(v.custo)], ['Ref. avaliação AutoAvaliar', brR(v.refAvaliacao)], ['% Pago vs. avaliação', brPct(audit.compraVar)], ['Status da compra', audit.compraStatus],
+      ['Valor pago', brR(v.custo)], ['Valor avaliado AutoAvaliar', brR(v.refAvaliacao)], ['Ref. AAV', brR(v.refAAV)], ['% Pago vs. avaliacao', brPct(audit.compraVar)], ['Status da compra', audit.compraStatus],
       ['Preço Venda Showroom', brR(v.precoVenda)], ['B2C AutoAvaliar', brR(v.aavB2C)], ['% Venda vs. B2C', brPct(audit.vendaVar)], ['Status da venda', audit.vendaStatus],
       ['FIPE', brR(v.fipe)], ['% B2C vs. FIPE', brPct(audit.b2cFipeVar)]
     ])}
