@@ -665,13 +665,9 @@ function computeStock(v){
   const custo = v.custo||0;
   const reparo = v.reparo||0;
   const dias = v.dias||0;
-
-  // Showroom: SM Showroom + todas as sugestões de preço do Auto Avaliar voltadas a venda direta
-  const showVals = [v.precoVenda, v.aavB2C, v.fipe, v.refWeb, v.valorApp].filter(x=>x!=null && x>0);
-  // Repasse: SM Repasse + sugestões de preço voltadas a atacado/repasse
-  const repVals  = [v.smRepasse, v.aavRepasse, v.valorTopDealer].filter(x=>x!=null && x>0);
-  const mediaShow = showVals.length ? showVals.reduce((a,b)=>a+b,0)/showVals.length : null;
-  const mediaRep  = repVals.length ? repVals.reduce((a,b)=>a+b,0)/repVals.length : null;
+  const mediaShow = avgMoney(refsShowroom(v));
+  // Repasse: apenas refer?ncias de venda B2B/atacado; AAV Compra n?o entra aqui.
+  const mediaRep  = avgMoney(refsRepasseVenda(v));
 
   const custoBase = custo + reparo + custo*PARAMS.kitPct;
 
@@ -729,10 +725,8 @@ function computeStock(v){
 }
 
 function computeEval(e){
-  const showVals = [e.fipe, e.aavB2C, e.refWeb, e.valorApp].filter(x=>x!=null && x>0);
-  const repVals = [e.aavRepasse, e.valorTopDealer].filter(x=>x!=null && x>0);
-  const mediaShow = showVals.length ? showVals.reduce((a,b)=>a+b,0)/showVals.length : null;
-  const mediaRepEv = repVals.length ? repVals.reduce((a,b)=>a+b,0)/repVals.length : null;
+  const mediaShow = avgMoney(refsShowroomEval(e));
+  const mediaRepEv = avgMoney(refsRepasseEval(e));
   const margemShow = mediaShow!=null
     ? ((mediaShow - e.valorAvaliado - e.gastoPrevisto) - (PARAMS.kitPct*e.valorAvaliado))/mediaShow : null;
   const margemRep = mediaRepEv!=null ? (mediaRepEv - e.valorAvaliado)/mediaRepEv : null;
@@ -966,7 +960,7 @@ function renderStats(){
   const focusHint = prejuizo > 0 ? 'Clique nos cards de prejuízo para ver o canal: Venda Showroom, Repasse ou ambos.'
     : abaixo > 0 ? 'Clique em Abaixo da meta para revisar preço e margem.'
     : 'Acompanhe diariamente para manter o estoque saudável.';
-  const desvioAvaliacaoAuto = avgDeviation(stockData, v=>v.refAvaliacao, v=>v.refAAV);
+  const desvioAvaliacaoAuto = avgDeviation(stockData, v=>v.refAvaliacao, v=>refCompraAAV(v));
   const desvioVendaB2C = avgDeviation(stockData, v=>v.precoVenda, v=>v.aavB2C);
   const cards = [
     {label:'Veículos no estoque', num:total, pct:100, cls:'', action:'all', hint:'Ver todos os carros'},
@@ -1282,6 +1276,28 @@ function marginBars(items){
     </div>`;
   }).join('')}</div>`;
 }
+function validMoney(v){
+  return v!=null && isFinite(v) && v>0;
+}
+function avgMoney(values){
+  const valid = values.filter(validMoney);
+  return valid.length ? valid.reduce((a,b)=>a+b,0)/valid.length : null;
+}
+function refCompraAAV(v){
+  return validMoney(v.refAAV) ? v.refAAV : null;
+}
+function refsShowroom(v){
+  return [v.precoVenda, v.aavB2C, v.fipe, v.refWeb, v.valorApp];
+}
+function refsRepasseVenda(v){
+  return [v.smRepasse, v.aavRepasse, v.valorTopDealer];
+}
+function refsShowroomEval(e){
+  return [e.fipe, e.aavB2C, e.refWeb, e.valorApp];
+}
+function refsRepasseEval(e){
+  return [e.aavRepasse, e.valorTopDealer];
+}
 function pctDiff(base, ref){
   return ref!=null && isFinite(ref) && ref>0 && base!=null && isFinite(base) ? (base-ref)/ref : null;
 }
@@ -1302,7 +1318,7 @@ function auditStatusVenda(pct){
   return pct > 0 ? 'Acima do B2C' : 'Abaixo do B2C';
 }
 function auditGps(v, c){
-  const compraRef = v.refAAV || null;
+  const compraRef = refCompraAAV(v);
   const compraVar = pctDiff(v.custo, compraRef);
   const vendaVar = pctDiff(v.precoVenda, v.aavB2C);
   const b2cFipeVar = pctDiff(v.aavB2C, v.fipe);
@@ -1331,6 +1347,9 @@ function renderAuditSection(v, c, audit){
       ['Preço Venda Showroom', brR(v.precoVenda)], ['B2C AutoAvaliar', brR(v.aavB2C)], ['% Venda vs. B2C', brPct(audit.vendaVar)], ['Status da venda', audit.vendaStatus],
       ['FIPE', brR(v.fipe)], ['% B2C vs. FIPE', brPct(audit.b2cFipeVar)]
     ])}
+    <div class="detail-empty" style="margin-top:12px">
+      <b>Mapa das referencias:</b> AAV Compra audita o valor pago; AAV B2B Venda compoe Mercado Repasse; AAV B2C audita o preco de venda showroom. Valor avaliado AutoAvaliar e valor pago podem ser iguais, por isso nao sao usados como referencia entre si.
+    </div>
     <div class="detail-empty" style="margin-top:12px">
       <b>Desvio de rota:</b> ${escapeHtml(audit.desvio)}<br>
       <b>Recálculo de rota:</b> ${escapeHtml(audit.recalculo)}<br>
